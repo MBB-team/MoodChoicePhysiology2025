@@ -3,9 +3,9 @@
 % https://mbb-team.github.io/VBA-toolbox/
 
 % Prepare
-    do_inversions = 1;
-    do_mdlcomparison = 1;
-    do_analysis_winningmodel = 1;
+    do_inversions = false;
+    do_mdlcomparison = true;
+    do_analysis_winningmodel = false;
     load('participants.mat')
     data_directory = [cd filesep 'Data']; %Fill in the directory where the data is stored here
 % Model settings
@@ -18,28 +18,16 @@
         invert_models.ChoiceTemp = {'none','across types','per type'};
         invert_models.ChoiceBias = {'none','across types','per type'};
         invert_models.Mood = {'none','on bias'};
-    % Model comparison   
-        if do_mdlcomparison
-            compare_models.DelayModel = {'exponential'};
-            compare_models.RiskModel = {'expected reward'};
-            compare_models.EffortModel = {'additive'};
-            compare_models.RewardModel = {'fixed','variable'};
-            compare_models.PowerModel = {'fixed','variable'};
-            compare_models.ChoiceTemp = {'none','across types','per type'};
-            compare_models.ChoiceBias = {'none','across types','per type'};
-            compare_models.Mood = {'none'};
-        end
-    % Winning choice model analysis
-        if do_analysis_winningmodel
-            winning_model.DelayModel = {'exponential'};
-            winning_model.RiskModel = {'expected reward'};
-            winning_model.EffortModel = {'additive'};
-            winning_model.RewardModel = {'fixed'};
-            winning_model.PowerModel = {'variable'};
-            winning_model.ChoiceTemp = {'per type'};
-            winning_model.ChoiceBias = {'per type'};
-            winning_model.Mood = {'on bias'};
-        end
+    %List the models to be compared to each other
+        compare_models.DelayModel = {'exponential'};
+        compare_models.RiskModel = {'expected reward'};
+        compare_models.EffortModel = {'additive'};
+        compare_models.RewardModel = {'fixed','variable'};
+        compare_models.PowerModel = {'fixed','variable'};
+        compare_models.ChoiceTemp = {'none','across types','per type'};
+        compare_models.ChoiceBias = {'none','across types','per type'};
+        compare_models.Mood = {'none'};
+
 
 %% Invert models
 if do_inversions
@@ -108,7 +96,7 @@ if do_inversions
             for mdl = 1:size(analysis_list,1)
                 %Inversion settings
                     %Options: general
-                        options = struct; %#ok<PFTUSE>
+                        options = struct;
                         options.sources.type = 1; %binary data
                         options.verbose = 0; %don't print text in the command window
                         options.DisplayWin = 0; %don't show progress on images
@@ -201,6 +189,8 @@ end %if do_inversions
 
 %% Compare models
 if do_mdlcomparison
+    %Get modelling results
+        load([cd filesep 'Results' filesep 'choiceModelBased'])
     %Analysis list
         analysis_list = MakeAnalysisList(compare_models);
         categorynames = analysis_list.Properties.VariableNames; %Predefined model categories
@@ -289,58 +279,7 @@ if do_mdlcomparison
                 bar(mdlComp.excProb,'FaceColor',[0 0 0]);
                 xticks(1:length(mdlComp.mdlFreq)); 
                 ylabel('Exceedance probability'); xlabel('Model number'); title('Full model space: exceedance probability')
-        %Make an excel table
-%             writetable(analysis_list,'ModelList.xlsx')
 end
-
-%% Analysis of winning model
-if do_analysis_winningmodel    
-    %Idenfity winning model in Inversionresults
-        analysis_list = MakeAnalysisList(winning_model);
-        categorynames = analysis_list.Properties.VariableNames; %Predefined model categories
-        i_mdl = [];
-        for i_inv = 1:length(Inversionresults) %Loop through all models that have been inverted in Inversionresults
-            analysis = Inversionresults(i_inv).analysis;
-            match = false(1,length(analysis));
-            for i_cat = 1:length(analysis) %Loop through model categories
-                if strcmp(analysis_list.(categorynames{i_cat}),analysis(i_cat))
-                    match(i_cat) = true;
-                else; break;
-                end
-            end
-            if all(match)
-                i_mdl = i_inv; break
-            end
-        end
-        if isempty(i_mdl)
-            disp('The winning model is not in the list of inverted models')
-        end
-    %Visualize winning model        
-%         Visualize_Model(Inversionresults(i_mdl),participant_list)        
-    %Test valence/arousal factors (if included in the model)
-        if ~strcmp(winning_model.Valence,'none') || ~strcmp(winning_model.Arousal,'none') 
-            %Get affect parameter values
-                data_val = [Inversionresults(i_mdl).muPhi.betaVal]';
-                data_ar = [Inversionresults(i_mdl).muPhi.betaAr]';
-            %Visualize parameter values
-                figure
-                subplot(1,2,1); hold on
-                    RH_Barplot([data_val data_ar],settings.MatlabColors(1:2,:));
-                    xticklabels({'valence weight','arousal weight'})
-                    title('Model posterior: valence and arousal effects')
-                    ylabel('parameter value')
-                subplot(1,2,2); %Result across studies
-                    if length(include_studies)>1
-                        P = Visualize_PerStudy([data_val,data_ar],{'valence weight','arousal weight'},include_studies,[participant_list.study]',1);
-                        title('Model posteriors per study')
-                    end
-            %Regress results against personality data
-                Visualize_Personality({data_val},[],include_studies,participant_list);
-                regressors = {'study','age','gender','impulsivity','depression','anxiety','apathy','hypomania'};    %Hypomania only in study 7, 8, 9 (which don't enter in a regression together)
-                fit_mdl_val = Analyze_RegressDemographics(data_val,participant_list,regressors);
-                fit_mdl_ar = Analyze_RegressDemographics(data_ar,participant_list,regressors);        
-        end %if strcmp   
-end %if winning_model
         
 %% Subfunction: make analysis list
 function [analysis_list,constraints_list,priors_list] = MakeAnalysisList(listmodels)
@@ -575,6 +514,7 @@ function [Z] = ObservationFunction(~,P,u,in)
                     bias = bias + par.betaMood * M;                    
             end
         %Compute decision values per choice type
+            V1 = k_Reward .* R1; %value of (uncostly) option 1
             if type == 1 %Delay
                 V2 = k_Reward .* R2 .* exp(-k_Cost .* C_d .^ par.gammaD);
             elseif type == 2 %Risk
@@ -582,24 +522,17 @@ function [Z] = ObservationFunction(~,P,u,in)
             elseif type == 3 %Physical Effort
                 V2 = k_Reward .* R2 - k_Cost .* C_e .^ par.gammaE; 
             end %if type                
-        %Compute probability of chosing option 1 (uncostly option)
-            V1 = k_Reward .* R1;
-            DV = V1 - V2; %Decision value
+        %Compute probability of chosing option 2 (costly option)
+            DV = V2 - V1; %Decision value
             Z(i) = 1./(1 + exp( -(beta.*DV + bias) ) );
     end %for i
 end %function
 
 %% Subfunction: get inversion results structure
-function [Inversionresults] = GetInversionResults(modelinversion, participants)
+function [Inversionresults] = GetInversionResults(modelinversion, participants, analysis_list,constraints_list,priors_list)
 disp('Getting inversion results...')
 
-% List the inverted models
-    listmodels = struct;
-    fields = modelinversion(1).analysis.Properties.VariableNames;
-    for j = 1:length(fields)
-        listmodels.(fields{j}) = unique(modelinversion(1).analysis.(fields{j}));
-    end
-    [analysis_list,constraints_list,priors_list] = MakeAnalysisList(listmodels);
+% Prepare
     Inversionresults = struct;       
     typenames = {'Delay','Risk','Effort'};
     
@@ -627,11 +560,7 @@ disp('Getting inversion results...')
                 %Posteriors
                     %Model evidence -- for model comparison
                         if ~isempty(modelinversion(ppt).logF)
-                            try
-                                Inversionresults(mdl).logF(ppt) = modelinversion(ppt).logF(mdl);
-                            catch
-                                keyboard
-                            end
+                            Inversionresults(mdl).logF(ppt) = modelinversion(ppt).logF(mdl);
                         end
                     %Per parameter
                         for par = 1:length(parameternames)
@@ -647,7 +576,7 @@ disp('Getting inversion results...')
                     for type = 1:length(typenames)
                         if ~isempty(modelinversion(ppt).Y)
                             Inversionresults(mdl).Y(ppt).(typenames{type}) = [modelinversion(ppt).Y{mdl,type} NaN(1,n_choices-length(modelinversion(ppt).Y{mdl,type}))]; %NB: padded with NaNs
-                            Inversionresults(mdl).P_SS(ppt).(typenames{type}) = [modelinversion(ppt).P_SS{mdl,type} NaN(1,n_choices-length(modelinversion(ppt).P_SS{mdl,type}))]; %NB: padded with NaNs
+                            Inversionresults(mdl).P_LL(ppt).(typenames{type}) = [modelinversion(ppt).P_LL{mdl,type} NaN(1,n_choices-length(modelinversion(ppt).P_LL{mdl,type}))]; %NB: padded with NaNs
                             Inversionresults(mdl).Residuals(ppt).(typenames{type}) = modelinversion(ppt).Residuals{mdl,type};
                         end
                     end                
