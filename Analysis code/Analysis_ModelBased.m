@@ -3,9 +3,9 @@
 % https://mbb-team.github.io/VBA-toolbox/
 
 % Prepare
-    do_inversions = false;
+    do_inversions = true;
     do_mdlcomparison = true;
-    do_analysis_winningmodel = false;
+    do_analysis_winningmodel = true;
     load('participants.mat')
     data_directory = [cd filesep 'Data']; %Fill in the directory where the data is stored here
 % Model settings
@@ -17,7 +17,7 @@
         invert_models.PowerModel = {'fixed','variable'};
         invert_models.ChoiceTemp = {'none','across types','per type'};
         invert_models.ChoiceBias = {'none','across types','per type'};
-        invert_models.Mood = {'none','on bias'};
+        invert_models.Mood = {'none'};
     %List the models to be compared to each other
         compare_models.DelayModel = {'exponential'};
         compare_models.RiskModel = {'expected reward'};
@@ -27,7 +27,15 @@
         compare_models.ChoiceTemp = {'none','across types','per type'};
         compare_models.ChoiceBias = {'none','across types','per type'};
         compare_models.Mood = {'none'};
-
+    %Features of the winning model
+        winning_model.DelayModel = {'exponential'};
+        winning_model.RiskModel = {'expected reward'};
+        winning_model.EffortModel = {'additive'};
+        winning_model.RewardModel = {'fixed'};
+        winning_model.PowerModel = {'variable'};
+        winning_model.ChoiceTemp = {'per type'};
+        winning_model.ChoiceBias = {'per type'};
+        winning_model.Mood = {'none'};
 
 %% Invert models
 if do_inversions
@@ -35,17 +43,6 @@ if do_inversions
 % Configure model space
     [analysis_list,constraints_list,priors_list] = MakeAnalysisList(invert_models);
     parameternames = constraints_list.Properties.VariableNames;
-    %Restrict list to reported models only (for computational efficiency)
-        match = false(size(analysis_list));
-        for i = 1:size(analysis_list,2)
-            varName = analysis_list.Properties.VariableNames{i};
-            match(:,i) = strcmp(analysis_list.(varName),winning_model.(varName));
-        end
-        i_winning = all(match,2);
-        include_models = strcmp(analysis_list.Mood,'none') | i_winning;
-        analysis_list = analysis_list(include_models,:);
-        constraints_list = constraints_list(include_models,:);
-        priors_list = priors_list(include_models,:);
 % Loop through participants
     modelinversion = struct;
     parfor ppt = 1:size(participants,1) %replace "parfor" with "for" if you don't have the parallel computing toolbox installed
@@ -102,10 +99,10 @@ if do_inversions
                         options.DisplayWin = 0; %don't show progress on images
                     %Options: in observation function
                         options.inG.parameternames = parameternames;
-                        options.inG.constraints = constraints_list{mdl,:}; %#ok<PFBNS>
+                        options.inG.constraints = constraints_list{mdl,:}; 
                         options.inG.modelcat = analysis_list.Properties.VariableNames;
                         options.inG.modelspec = analysis_list{mdl,:}; 
-                        options.inG.P0 = priors_list{mdl,:};  %#ok<PFBNS>
+                        options.inG.P0 = priors_list{mdl,:};  
                         options.inG.inv = mdl;
                     %Prior variance
                         options.priors.SigmaPhi = eye(size(constraints_list,2));
@@ -135,62 +132,45 @@ if do_inversions
                         dim.n_t = 1;
                 %Invert the model and get results
                     [posterior,output] = VBA_NLStateSpaceModel(y,u_obs,[],@ObservationFunction,dim,options);
-                    muPhi = posterior.muPhi;
                     SigmaPhi = posterior.SigmaPhi;
-                %Process inversion results
-                    %Calculate choice probability, actual choice, and residuals
-                        P_LL = cell(1,3); Residuals = cell(1,3); Y = cell(1,3);
-                        for type = find(include_choicetypes)
-                            type_select = u(7,:)==type;
-                            P_LL{type} = ObservationFunction([],muPhi,u(:,type_select),options.inG);
-                            Y{type} = y(type_select)';
-                            Residuals{type} = Y{type} - P_LL{type};
-                        end
-                    %Correct constrained or excluded output
-                        for i_par = 1:size(constraints_list,2)
-                            %Convert parameter estimates based on parameter constraints
-                                switch char(constraints_list{mdl,i_par})
-                                    case 'exponential'
-                                        muPhi(i_par) = exp(muPhi(i_par));
-                                    case 'softmax'
-                                        muPhi(i_par) = 1/(1+exp(-muPhi(i_par)));
-                                    case 'safepos'
-                                        muPhi(i_par) = RH_Safepos(muPhi(i_par));                                        
-                                end
-                            %Set parameters from uninverted choice types as NaN
-                                if ~include_choicetypes(1) && ismember(parameternames{i_par},{'kD','biasD','betaD','gammaD'})
-                                    muPhi(i_par) = NaN;
-                                    SigmaPhi(i_par,i_par) = NaN;
-                                elseif ~include_choicetypes(2) && ismember(parameternames{i_par},{'kR','biasR','betaR','gammaR'})
-                                    muPhi(i_par) = NaN;
-                                    SigmaPhi(i_par,i_par) = NaN;
-                                elseif ~include_choicetypes(3) && ismember(parameternames{i_par},{'kE','biasE','betaE','gammaE'})
-                                    muPhi(i_par) = NaN;
-                                    SigmaPhi(i_par,i_par) = NaN;
-                                end
-                        end
-                        SigmaPhi = diag(SigmaPhi);
+                    muPhi = posterior.muPhi;
+                    for i_par = 1:size(constraints_list,2)
+                        %Convert parameter estimates based on parameter constraints
+                            switch char(constraints_list{mdl,i_par})
+                                case 'exponential'
+                                    muPhi(i_par) = exp(muPhi(i_par));
+                                case 'softmax'
+                                    muPhi(i_par) = 1/(1+exp(-muPhi(i_par)));
+                                case 'safepos'
+                                    muPhi(i_par) = RH_Safepos(muPhi(i_par));                                        
+                            end
+                        %Set parameters from uninverted choice types as NaN
+                            if ~include_choicetypes(1) && ismember(parameternames{i_par},{'kD','biasD','betaD','gammaD'})
+                                muPhi(i_par) = NaN;
+                                SigmaPhi(i_par,i_par) = NaN;
+                            elseif ~include_choicetypes(2) && ismember(parameternames{i_par},{'kR','biasR','betaR','gammaR'})
+                                muPhi(i_par) = NaN;
+                                SigmaPhi(i_par,i_par) = NaN;
+                            elseif ~include_choicetypes(3) && ismember(parameternames{i_par},{'kE','biasE','betaE','gammaE'})
+                                muPhi(i_par) = NaN;
+                                SigmaPhi(i_par,i_par) = NaN;
+                            end
+                    end
+                    SigmaPhi = diag(SigmaPhi);
                 %Store in the modelinversion structure
                     modelinversion(ppt).muPhi(mdl,:) = muPhi';
                     modelinversion(ppt).SigmaPhi(mdl,:) = SigmaPhi';
-                    modelinversion(ppt).logF(1,mdl) = output.F;
-                    modelinversion(ppt).Y(mdl,:) = Y; 
-                    modelinversion(ppt).P_LL(mdl,:) = P_LL; 
-                    modelinversion(ppt).Residuals(mdl,:) = Residuals; 
+                    modelinversion(ppt).logF(1,mdl) = output.F;                    
                     modelinversion(ppt).analysis = analysis_list;
             end %for inv            
     end %parfor
 % Get inversion results (necessary for the next steps)
-    Inversionresults = GetInversionResults(modelinversion, participants);
-% Store
-    save([cd filesep 'Results' filesep 'choiceModelBased'],'modelinversion','Inversionresults')
+    Inversionresults = GetInversionResults(modelinversion, participants, analysis_list,constraints_list,priors_list);
     
 end %if do_inversions
 
 %% Compare models
-if do_mdlcomparison
-    %Get modelling results
-        load([cd filesep 'Results' filesep 'choiceModelBased'])
+if do_mdlcomparison %Requires the structure "Inversionresults" to be in the workspace (see previous step)
     %Analysis list
         analysis_list = MakeAnalysisList(compare_models);
         categorynames = analysis_list.Properties.VariableNames; %Predefined model categories
@@ -228,6 +208,7 @@ if do_mdlcomparison
             end
             if length(list_fam)>1 %Compare model families if there are more than one
                 %Set options
+                    options = struct;
                     options.verbose = 1;
                     options.DisplayWin = 1;
                     options.figName = categorynames{i_cat}; %Name the figure after the category
@@ -280,7 +261,104 @@ if do_mdlcomparison
                 xticks(1:length(mdlComp.mdlFreq)); 
                 ylabel('Exceedance probability'); xlabel('Model number'); title('Full model space: exceedance probability')
 end
+
+%% Analysis of winning model
+if do_analysis_winningmodel
+    
+    %prepare
+        winning_model_data = struct;
+        winning_model_data.model = winning_model;
+        typenames = {'delay','risk','effort'};
+    %Identify winning model     
+        which_models = fieldnames(winning_model);
+        for mdl = 1:length(Inversionresults)
+            match = false(size(which_models));
+            for m = 1:length(which_models)
+                match(m) = strcmp(Inversionresults(mdl).analysis{m},winning_model.(which_models{m}));
+            end
+            if all(match)
+                i_winning_model = mdl;
+                break
+            end
+        end
+    %Gather results per participant
+        for ppt = 1:size(participants,1) %replace "parfor" with "for" if you don't have the parallel computing toolbox installed
+            %Load data
+                disp(['PPT #' num2str(ppt)])
+                data = load([data_directory filesep participants.dataset{ppt}]);
+                AllData = data.AllData;
+                trialinfo = AllData.trialinfo;
+                %Select trials
+                    include_choicetypes = true(1,3);   
+                    for type = 1:3
+                        if participants.study(ppt) == 1 && type == 2 %Excude probability discounting from study 1 
+                            include_choicetypes(type) = 0;
+                        elseif participants.study(ppt) == 2 && type == 1 %Exclude delay discounting from study 2
+                            include_choicetypes(type) = 0;
+                        end
+                    end
+                    select = ismember(trialinfo.choicetype,find(include_choicetypes)) & ismember(trialinfo.condition,[1,2,5]); 
+                %Compute mood
+                    AllData.affect.Mood = AllData.affect.RateHappy-AllData.affect.RateSad;
+                    AllData.affect.Mood(ismember(AllData.affect.Condition,{'anger','fear'})) = NaN;
+                    AllData.affect.Mood = nanzscore(AllData.affect.Mood);
+                    trialinfo.mood = NaN(size(trialinfo,1),1);
+                    for trl = 1:size(AllData.trialinfo,1)
+                        ind = AllData.trialinfo.induction(trl); 
+                        trialinfo.mood(trl) = AllData.affect.Mood(ind); %note, only for happy/sad/neutral condition trials
+                    end
+            %Load the parameters and model specifications of the winning model
+                muPhi = Inversionresults(i_winning_model).muPhi(ppt); %parameter names and unconstrained parameter values
+                inG = struct;
+                inG.parameternames = fieldnames(muPhi)';
+                inG.constraints = repmat({'none'},size(inG.parameternames));
+                inG.modelcat = fieldnames(winning_model)';
+                inG.modelspec = struct2array(winning_model);
+                par = struct2array(muPhi); %unconstrained parameter values
+            %Get discount functions
+                u_norm = [zeros(1,100); ones(1,100); zeros(6,100)]; %SSReward; LLReward; Loss; Delay; Risk; Effort; choicetype; mood
+                for type = 1:length(typenames)
+                    u = u_norm;
+                    switch typenames{type}
+                        case 'delay'
+                            u([4,7],:) = [linspace(0,1,100); ones(1,100)];
+                        case 'risk'
+                            u([3,5,7],:) = [1/3*ones(1,100); linspace(0,1,100); 2*ones(1,100)];
+                        case 'effort'
+                            u([6,7],:) = [linspace(0,1,100); 3*ones(1,100)];
+                    end
+                    [~,~,V_costly] = ObservationFunction_embedded([],par,u,inG);
+                    winning_model_data.discountFunction{ppt,type} = V_costly;
+                end
+            %Data for psychometric curve
+                %Input for observation function
+                    u = [   trialinfo.SSReward(select)';    %Trial features
+                            ones(1,sum(select));            %LL Reward
+                            trialinfo.Loss(select)';
+                            trialinfo.Delay(select)';
+                            trialinfo.Risk(select)';
+                            trialinfo.Effort(select)';
+                            trialinfo.choicetype(select)';
+                            trialinfo.mood(select)'];
+                    [P_LL,V_uncostly,V_costly] = ObservationFunction_embedded([],par,u,inG);
+                    Y = trialinfo.choiceLL(select); %actual observed data
+                %Decision value and choice probability
+                    bias = nansum((muPhi.bias + [muPhi.biasD;muPhi.biasR;muPhi.biasE] + muPhi.betaMood .* u(8,:)) .* double(u(7,:)==[1;2;3])); %#ok<*NANSUM>
+                    beta = nansum((muPhi.beta + [muPhi.betaD;muPhi.betaR;muPhi.betaE]) .* double(u(7,:)==[1;2;3])); 
+                    DV = V_costly-V_uncostly + bias./beta; %Decision value including choice bias (corrected for choice temperature)
+                    winning_model_data.DV{ppt,1} = DV;
+                    winning_model_data.P_LL{ppt,1} = P_LL;
+                    winning_model_data.Y{ppt,1} = Y';
+            %Data for residuals and correlation with mood
+                winning_model_data.ratedMood{ppt,1} = u(8,:);
+                winning_model_data.residuals{ppt,1} = Y' - P_LL;
+
+        end %for ppt
+end
         
+%% Save results
+    save([cd filesep 'Results' filesep 'choiceModelBased'],'modelinversion','Inversionresults','mdlComp', 'winning_model_data')
+
 %% Subfunction: make analysis list
 function [analysis_list,constraints_list,priors_list] = MakeAnalysisList(listmodels)
 % Produces an analysis list (table) for discounting models, and accordinly, a list of parameters with their constraints 
@@ -426,12 +504,19 @@ function [muPhi] = PriorsFromCalibration(options,cal_trialinfo,include_choicetyp
 end
 
 %% Subfunction: observation function
-function [Z] = ObservationFunction(~,P,u,in)
+function Z = ObservationFunction(~,P,u,in)
+    Z = ObservationFunction_embedded([],P,u,in);
+end
+
+function [Z,V_uncostly,V_costly] = ObservationFunction_embedded(~,P,u,in)
 %  Inverts model for delay, risk, and effort discounting
 %  Inputs:
 %       P: vector of parameters
 %       u: Experimental design inputs (option 1 and 2)
 %       in: any exra relevant information
+% Outputs:
+%       Z: choice probability (the only output required by VBA)
+%       V1, V2: values of option 1 and 2, for convenience
 
 %Parameters
     par = struct;
@@ -459,8 +544,8 @@ function [Z] = ObservationFunction(~,P,u,in)
 %Loop through choices
     for i = 1:length(Z)
         %Inputs (u)
-            R1 = u(1,i);   %Reward for (uncostly) option 1
-            R2 = u(2,i);   %Reward for (costly) option 2
+            R1 = u(1,i);   %Reward for uncostly option
+            R2 = u(2,i);   %Reward for costly option
             L = u(3,i);    %Loss in the case of a lost risky lottery
             C_d = u(4,i);  %Cost: delay 
             C_r = u(5,i);  %Cost: risk 
@@ -514,73 +599,54 @@ function [Z] = ObservationFunction(~,P,u,in)
                     bias = bias + par.betaMood * M;                    
             end
         %Compute decision values per choice type
-            V1 = k_Reward .* R1; %value of (uncostly) option 1
+            V_uncostly = k_Reward .* R1; %value of (uncostly) option 1
             if type == 1 %Delay
-                V2 = k_Reward .* R2 .* exp(-k_Cost .* C_d .^ par.gammaD);
+                V_costly = k_Reward .* R2 .* exp(-k_Cost .* C_d .^ par.gammaD);
             elseif type == 2 %Risk
-                V2 = k_Reward .* (1 - C_r) .* R2 - k_Cost .* (C_r .* L) .^ par.gammaR;
+                V_costly = k_Reward .* (1 - C_r) .* R2 - k_Cost .* (C_r .* L) .^ par.gammaR;
             elseif type == 3 %Physical Effort
-                V2 = k_Reward .* R2 - k_Cost .* C_e .^ par.gammaE; 
+                V_costly = k_Reward .* R2 - k_Cost .* C_e .^ par.gammaE; 
             end %if type                
         %Compute probability of chosing option 2 (costly option)
-            DV = V2 - V1; %Decision value
+            DV = V_costly - V_uncostly; %Decision value
             Z(i) = 1./(1 + exp( -(beta.*DV + bias) ) );
     end %for i
 end %function
 
 %% Subfunction: get inversion results structure
 function [Inversionresults] = GetInversionResults(modelinversion, participants, analysis_list,constraints_list,priors_list)
-disp('Getting inversion results...')
 
 % Prepare
     Inversionresults = struct;       
-    typenames = {'Delay','Risk','Effort'};
     
 % Collect all participants' model inversion results
     for ppt = 1:size(participants,1) %Loop through participants
-        %Get data
-            disp(['PPT ' num2str(ppt)])
-            switch participants.study(ppt)
-                case 1; n_choices = 75;
-                case 2; n_choices = 120;
-                case 3; n_choices = 180;                
-                case 4; n_choices = 120;
-            end        
-        %Loop through inversions
-            for mdl = 1:size(analysis_list,1) %List of specified inversions
-                parameternames = constraints_list.Properties.VariableNames(~isnan(priors_list{mdl,:}));            
-                %Analysis overview (in principle, this only needs to be done for 1 participant)  
-                    %The models of the inversion
-                        Inversionresults(mdl).analysis = analysis_list{mdl,:};
-                    %The inversion's parameter priors and constraints
-                        for par = 1:length(parameternames)
-                            Inversionresults(mdl).priors.(parameternames{par}) = priors_list.(parameternames{par})(mdl);
-                            Inversionresults(mdl).constraints.(parameternames{par}) = constraints_list.(parameternames{par}){mdl};
+        for mdl = 1:size(analysis_list,1) %List of specified inversions
+            parameternames = constraints_list.Properties.VariableNames(~isnan(priors_list{mdl,:}));            
+            %Analysis overview
+                %The models of the inversion
+                    Inversionresults(mdl).analysis = analysis_list{mdl,:};
+                %The inversion's parameter priors and constraints
+                    for par = 1:length(parameternames)
+                        Inversionresults(mdl).priors.(parameternames{par}) = priors_list.(parameternames{par})(mdl);
+                        Inversionresults(mdl).constraints.(parameternames{par}) = constraints_list.(parameternames{par}){mdl};
+                    end
+            %Posteriors
+                %Model evidence -- for model comparison
+                    if ~isempty(modelinversion(ppt).logF)
+                        Inversionresults(mdl).logF(ppt) = modelinversion(ppt).logF(mdl);
+                    end
+                %Per parameter
+                    for par = 1:length(parameternames)
+                        if ~isempty(modelinversion(ppt).muPhi)
+                            Inversionresults(mdl).muPhi(ppt).(parameternames{par}) = modelinversion(ppt).muPhi(mdl,par);
+                            Inversionresults(mdl).SigmaPhi(ppt).(parameternames{par}) = modelinversion(ppt).SigmaPhi(mdl,par);
+                        else
+                            Inversionresults(mdl).muPhi(ppt).(parameternames{par}) = NaN;
+                            Inversionresults(mdl).SigmaPhi(ppt).(parameternames{par}) = NaN;
                         end
-                %Posteriors
-                    %Model evidence -- for model comparison
-                        if ~isempty(modelinversion(ppt).logF)
-                            Inversionresults(mdl).logF(ppt) = modelinversion(ppt).logF(mdl);
-                        end
-                    %Per parameter
-                        for par = 1:length(parameternames)
-                            if ~isempty(modelinversion(ppt).muPhi)
-                                Inversionresults(mdl).muPhi(ppt).(parameternames{par}) = modelinversion(ppt).muPhi(mdl,par);
-                                Inversionresults(mdl).SigmaPhi(ppt).(parameternames{par}) = modelinversion(ppt).SigmaPhi(mdl,par);
-                            else
-                                Inversionresults(mdl).muPhi(ppt).(parameternames{par}) = NaN;
-                                Inversionresults(mdl).SigmaPhi(ppt).(parameternames{par}) = NaN;
-                            end
-                        end
-                %Choices, modelled choices, and residuals -- for model visualization
-                    for type = 1:length(typenames)
-                        if ~isempty(modelinversion(ppt).Y)
-                            Inversionresults(mdl).Y(ppt).(typenames{type}) = [modelinversion(ppt).Y{mdl,type} NaN(1,n_choices-length(modelinversion(ppt).Y{mdl,type}))]; %NB: padded with NaNs
-                            Inversionresults(mdl).P_LL(ppt).(typenames{type}) = [modelinversion(ppt).P_LL{mdl,type} NaN(1,n_choices-length(modelinversion(ppt).P_LL{mdl,type}))]; %NB: padded with NaNs
-                            Inversionresults(mdl).Residuals(ppt).(typenames{type}) = modelinversion(ppt).Residuals{mdl,type};
-                        end
-                    end                
-            end %for mdl
+                    end
+        end %for mdl
     end %for ppt
 
 end %function
