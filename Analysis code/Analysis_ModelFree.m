@@ -71,11 +71,7 @@
                     select = ismember(AllData.trialinfo.choicetype,find(include_choicetypes)) & AllData.trialinfo.condition == emo;
                     choice_mdlfree.choiceRate(ppt,emo) = nanmean(AllData.trialinfo.choiceLL(select));
                 end
-            %Logistic regression against mood
-                for trl = 1:size(AllData.trialinfo,1)
-                    ind = AllData.trialinfo.induction(trl); 
-                    AllData.trialinfo.mood(trl) = AllData.affect.Mood(ind); %note, only for happy/sad/neutral condition trials
-                end
+            %Logistic regression against mood                
                 for type = 1:3 %delay, risk, effort
                     %inclusion criteria
                         i_select = AllData.trialinfo.choicetype==type;
@@ -85,7 +81,6 @@
                             continue
                         end
                     %regress
-                        lastwarn('');
                         fit_model = fitglm(AllData.trialinfo.mood(i_select),AllData.trialinfo.choiceLL(i_select),'Distribution','binomial');
                         choice_mdlfree.beta_mood(ppt,type) = fit_model.Coefficients.Estimate(2);
                 end

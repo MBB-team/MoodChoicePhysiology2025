@@ -4,7 +4,7 @@
 
 % Prepare
     do_inversions = true;
-    do_mdlcomparison = true;
+    do_mdlcomparison = false;
     do_analysis_winningmodel = true;
     load('participants.mat')
     data_directory = [cd filesep 'Data']; %Fill in the directory where the data is stored here
@@ -13,11 +13,11 @@
         invert_models.DelayModel = {'exponential'};
         invert_models.RiskModel = {'expected reward'};
         invert_models.EffortModel = {'additive'};
-        invert_models.RewardModel = {'fixed','variable'};
-        invert_models.PowerModel = {'fixed','variable'};
-        invert_models.ChoiceTemp = {'none','across types','per type'};
-        invert_models.ChoiceBias = {'none','across types','per type'};
-        invert_models.Mood = {'none'};
+        invert_models.RewardModel = {'fixed'};
+        invert_models.PowerModel = {'variable'};
+        invert_models.ChoiceTemp = {'per type'};
+        invert_models.ChoiceBias = {'per type'};
+        invert_models.Mood = {'on bias'};
     %List the models to be compared to each other
         compare_models.DelayModel = {'exponential'};
         compare_models.RiskModel = {'expected reward'};
@@ -35,7 +35,7 @@
         winning_model.PowerModel = {'variable'};
         winning_model.ChoiceTemp = {'per type'};
         winning_model.ChoiceBias = {'per type'};
-        winning_model.Mood = {'none'};
+        winning_model.Mood = {'on bias'};
 
 %% Invert models
 if do_inversions
@@ -52,15 +52,6 @@ if do_inversions
                 data = load([data_directory filesep participants.dataset{ppt}]);
                 AllData = data.AllData;
                 trialinfo = AllData.trialinfo;
-            %Compute mood
-                AllData.affect.Mood = AllData.affect.RateHappy-AllData.affect.RateSad;
-                AllData.affect.Mood(ismember(AllData.affect.Condition,{'anger','fear'})) = NaN;
-                AllData.affect.Mood = nanzscore(AllData.affect.Mood);
-                trialinfo.mood = NaN(size(trialinfo,1),1);
-                for trl = 1:size(AllData.trialinfo,1)
-                    ind = AllData.trialinfo.induction(trl); 
-                    trialinfo.mood(trl) = AllData.affect.Mood(ind); %note, only for happy/sad/neutral condition trials
-                end
             %Exclude choice types from datasets that are dissimilar to the same type in other studies
                 include_choicetypes = true(1,3);   
                 for type = 1:3
@@ -115,7 +106,7 @@ if do_inversions
                                 case 'safepos'
                                     options.priors.SigmaPhi(par,par) = 10;
                                 case 'exponential'
-                                    options.priors.SigmaPhi(par,par) = 1;
+                                    options.priors.SigmaPhi(par,par) = 2;
                             end
                         end
                     %Get prior parameter values from calibration data
@@ -298,15 +289,6 @@ if do_analysis_winningmodel
                         end
                     end
                     select = ismember(trialinfo.choicetype,find(include_choicetypes)) & ismember(trialinfo.condition,[1,2,5]); 
-                %Compute mood
-                    AllData.affect.Mood = AllData.affect.RateHappy-AllData.affect.RateSad;
-                    AllData.affect.Mood(ismember(AllData.affect.Condition,{'anger','fear'})) = NaN;
-                    AllData.affect.Mood = nanzscore(AllData.affect.Mood);
-                    trialinfo.mood = NaN(size(trialinfo,1),1);
-                    for trl = 1:size(AllData.trialinfo,1)
-                        ind = AllData.trialinfo.induction(trl); 
-                        trialinfo.mood(trl) = AllData.affect.Mood(ind); %note, only for happy/sad/neutral condition trials
-                    end
             %Load the parameters and model specifications of the winning model
                 muPhi = Inversionresults(i_winning_model).muPhi(ppt); %parameter names and unconstrained parameter values
                 inG = struct;
@@ -343,7 +325,7 @@ if do_analysis_winningmodel
                     [P_LL,V_uncostly,V_costly] = ObservationFunction_embedded([],par,u,inG);
                     Y = trialinfo.choiceLL(select); %actual observed data
                 %Decision value and choice probability
-                    bias = nansum((muPhi.bias + [muPhi.biasD;muPhi.biasR;muPhi.biasE] + muPhi.betaMood .* u(8,:)) .* double(u(7,:)==[1;2;3])); %#ok<*NANSUM>
+                    bias = nansum((muPhi.bias + [muPhi.biasD;muPhi.biasR;muPhi.biasE]) .* double(u(7,:)==[1;2;3])); %#ok<*NANSUM>
                     beta = nansum((muPhi.beta + [muPhi.betaD;muPhi.betaR;muPhi.betaE]) .* double(u(7,:)==[1;2;3])); 
                     DV = V_costly-V_uncostly + bias./beta; %Decision value including choice bias (corrected for choice temperature)
                     winning_model_data.DV{ppt,1} = DV;
@@ -357,7 +339,11 @@ if do_analysis_winningmodel
 end
         
 %% Save results
-    save([cd filesep 'Results' filesep 'choiceModelBased'],'modelinversion','Inversionresults','mdlComp', 'winning_model_data')
+    try
+        save([cd filesep 'Results' filesep 'choiceModelBased'],'modelinversion','Inversionresults','mdlComp','winning_model_data')
+    catch
+        save([cd filesep 'Results' filesep 'choiceModelBased'],'modelinversion','Inversionresults','winning_model_data')
+    end
 
 %% Subfunction: make analysis list
 function [analysis_list,constraints_list,priors_list] = MakeAnalysisList(listmodels)
@@ -541,6 +527,8 @@ function [Z,V_uncostly,V_costly] = ObservationFunction_embedded(~,P,u,in)
     else
         Z = NaN(1,size(u,2));   %Probability of chosing costly option
     end
+    V_costly = NaN(size(Z));
+    V_uncostly = NaN(size(Z));
 %Loop through choices
     for i = 1:length(Z)
         %Inputs (u)
@@ -599,16 +587,16 @@ function [Z,V_uncostly,V_costly] = ObservationFunction_embedded(~,P,u,in)
                     bias = bias + par.betaMood * M;                    
             end
         %Compute decision values per choice type
-            V_uncostly = k_Reward .* R1; %value of (uncostly) option 1
+            V_uncostly(i) = k_Reward .* R1; %value of (uncostly) option 1
             if type == 1 %Delay
-                V_costly = k_Reward .* R2 .* exp(-k_Cost .* C_d .^ par.gammaD);
+                V_costly(i) = k_Reward .* R2 .* exp(-k_Cost .* C_d .^ par.gammaD);
             elseif type == 2 %Risk
-                V_costly = k_Reward .* (1 - C_r) .* R2 - k_Cost .* (C_r .* L) .^ par.gammaR;
+                V_costly(i) = k_Reward .* (1 - C_r) .* R2 - k_Cost .* (C_r .* L) .^ par.gammaR;
             elseif type == 3 %Physical Effort
-                V_costly = k_Reward .* R2 - k_Cost .* C_e .^ par.gammaE; 
+                V_costly(i) = k_Reward .* R2 - k_Cost .* C_e .^ par.gammaE; 
             end %if type                
         %Compute probability of chosing option 2 (costly option)
-            DV = V_costly - V_uncostly; %Decision value
+            DV = V_costly(i) - V_uncostly(i); %Decision value
             Z(i) = 1./(1 + exp( -(beta.*DV + bias) ) );
     end %for i
 end %function
