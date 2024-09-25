@@ -1,15 +1,17 @@
 % Setup
     data_directory = [cd filesep 'Data']; %Fill in the directory where the data is stored here
     load('participants')
-    i_exclude = 52; %do not visualize model from participant who chose the costly option 100% of the time
+% Exclusion criterion: choice rate
+    choicerates = NaN(size(participants,1),1);
+    for ppt = 1:size(participants,1)
+        load([data_directory filesep participants.dataset{ppt}]);
+        choicerates(ppt) = nanmean(AllData.trialinfo.choiceLL);
+    end
+    i_exclude = find(choicerates<0.05 | choicerates>0.95); %do not visualize modelling results if there is almost no variation in behaviour
     
 %% Panel (a) - discount functions
 % Prepare
-%     load([cd filesep 'Results' filesep 'choiceModelBased_noMood'])
-%             Draw_Psychometric_Curve(winning_model_data,data_directory,false)
-%             load([cd filesep 'Results' filesep 'choiceModelBased_withMood'])
-            Draw_Psychometric_Curve(winning_model_data,data_directory,true,i_exclude)
-            return
+    load([cd filesep 'Results' filesep 'choiceModelBased_noMood'])
     titles = {'delay','risk','effort'};
     costlabels = {'Months to wait','Probability of losing','Effort level'};
 % Visualize
@@ -31,7 +33,66 @@
 %% Panel (b) - psychometric curve of model without mood
     Draw_Psychometric_Curve(winning_model_data,data_directory,false,i_exclude)
     
-%% Panel (c) - to do.
+%% Panel (c) - residuals regressed against mood
+% Settings
+    n_bins = 9;
+    moodcolor = [0,176,80]./255; %green
+    emotion_colors = [0.0510    0.4590    0.9920; ... %blue for sad
+        0.5, 0.5, 0.5; ... %grey for neutral
+        1.0000    0.9    0.1]; %yellow for happy
+    color_map = NaN(101,3);
+    for i = 1:size(map,2)
+        color_map(:,i) = interp1([1;51;101], emotion_colors(:,i), 1:101)';
+    end
+% Gather regression coefficients and binned residuals
+    k_mood = NaN(size(participants,1),2);
+    binned_residuals = NaN(size(participants,1),n_bins);
+    binned_mood = NaN(size(participants,1),n_bins);
+    for ppt = 1:size(participants,1)
+        if ~ismember(ppt,i_exclude)
+            %data
+                disp(['PPT #' num2str(ppt)])
+                rated_mood = winning_model_data.ratedMood{ppt};
+                residuals = winning_model_data.residuals{ppt};
+            %regression
+                fit_model = fitglm(rated_mood,residuals);
+                k_mood(ppt,:) = fit_model.Coefficients.Estimate';
+            %binning
+                [sorted_mood,i_sorted] = sort(rated_mood); %sorted mood ratings
+                sorted_res = residuals(i_sorted);
+                n_small = floor(length(sorted_mood)/n_bins); %number of trials in small bins
+                largebins = rem(length(sorted_mood),n_small); %number of large bins (n_small+1 trials)
+                smallbins = n_bins - largebins; %number of small bins (n_small trials)
+                %SEQUENCE OF SORTED TRIALS: note, smaller bins on the edges, asymmetric with more small bins on the lower end of DV
+                    bins_n = [n_small*ones(1,ceil(smallbins/2)),(n_small+1)*ones(1,largebins),n_small*ones(1,floor(smallbins/2))];
+                bins_cum = [0 cumsum(bins_n)];
+                for bin = 1:n_bins
+                    i_bin = bins_cum(bin)+1:bins_cum(bin+1); %trial index for given bin
+                    binned_mood(ppt,bin) = mean(sorted_mood(i_bin));
+                    binned_residuals(ppt,bin) = mean(sorted_res(i_bin));
+                end
+        end
+    end
+% Visualize
+    figure; hold on; box on
+    %Mean regression of residuals against mood ratings
+        X = linspace(-2,2);
+        Y = k_mood(:,1) + k_mood(:,2).*X;
+        E = nanstd(Y) ./ sqrt(sum(~isnan(Y)));
+        Y = nanmean(Y);
+        patch([X X(end:-1:1)], [Y+E Y(end:-1:1)-E(end:-1:1)], moodcolor, 'facealpha', 0.25, 'Edgecolor', 'none');
+        plot(X, Y, 'linestyle', '-', 'LineWidth', 2, 'color', moodcolor);
+    %Binned residuals overlaid
+        x = nanmean(binned_mood);
+        y = nanmean(binned_residuals);
+        err = nanstd(binned_residuals)./sqrt(sum(~isnan(binned_residuals)));
+        E = errorbar(x,y,err,'k','CapSize',4,'LineStyle','none');
+        E.LineWidth = 1;
+        scatter(x,y,60,x,'filled','MarkerEdgeColor','k')
+    %Layout
+        xlabel('Mood score'); ylabel('Choice residuals')
+        axis([-2.5,2.5,-0.04,0.04])
+        colormap(color_map); colorbar; caxis([-1.6, 1.6])
 
 %% Panel (d) - modelled psychometric curves with mood parameter
 
@@ -191,4 +252,3 @@ return
     
 end
     
-
