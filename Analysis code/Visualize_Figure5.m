@@ -4,7 +4,7 @@
 % Exclusion criterion: choice rate
     choicerates = NaN(size(participants,1),1);
     for ppt = 1:size(participants,1)
-        load([data_directory filesep participants.dataset{ppt}]);
+        load([data_directory filesep participants.dataset{ppt} filesep 'AllData.mat']);
         choicerates(ppt) = nanmean(AllData.trialinfo.choiceLL);
     end
     i_exclude = find(choicerates<0.05 | choicerates>0.95); %do not visualize modelling results if there is almost no variation in behaviour
@@ -151,7 +151,7 @@ function Draw_Psychometric_Curve(winning_model_data,data_directory,mood_in_model
     for ppt = 1:size(participants,1)
         %Load the data
             disp(['PPT #' num2str(ppt)])
-            load([data_directory filesep participants.dataset{ppt}]) %#ok<LOAD>
+            load([data_directory filesep participants.dataset{ppt} filesep 'AllData.mat']) %#ok<LOAD>
             include_choicetypes = true(1,3);   
             for type = 1:3
                 if participants.study(ppt) == 1 && type == 2 %Excude probability discounting from study 1 

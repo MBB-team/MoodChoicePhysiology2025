@@ -10,7 +10,7 @@
     for ppt = 1:size(participants,1)
         %Load the data
             disp(['PPT #' num2str(ppt)])
-            load([data_directory filesep participants.dataset{ppt}])
+            load([data_directory filesep participants.dataset{ppt} filesep 'AllData.mat'])
             
         %% Ratings analysis
             %Settings

@@ -49,7 +49,7 @@ if do_inversions
         %Collect data
             %Load the data
                 disp(['PPT #' num2str(ppt)])
-                data = load([data_directory filesep participants.dataset{ppt}]);
+                data = load([data_directory filesep participants.dataset{ppt} filesep 'AllData.mat']);
                 AllData = data.AllData;
                 trialinfo = AllData.trialinfo;
             %Exclude choice types from datasets that are dissimilar to the same type in other studies
@@ -276,7 +276,7 @@ if do_analysis_winningmodel
         for ppt = 1:size(participants,1) %replace "parfor" with "for" if you don't have the parallel computing toolbox installed
             %Load data
                 disp(['PPT #' num2str(ppt)])
-                data = load([data_directory filesep participants.dataset{ppt}]);
+                data = load([data_directory filesep participants.dataset{ppt} filesep 'AllData.mat']);
                 AllData = data.AllData;
                 trialinfo = AllData.trialinfo;
                 %Select trials
