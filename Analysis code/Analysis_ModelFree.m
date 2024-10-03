@@ -1,7 +1,7 @@
-%% Analysis of emotion rating data
+%% Analysis of behaviour: emotion ratings and decision-making
 
 % General settings
-    data_directory = [cd filesep 'Data']; %Fill in the directory where the data is stored here
+    data_directory = 'C:\Users\rheerema\OneDrive\Experiment data\MoodChoicePhysiology2024'; %Fill in the directory where the data is stored here
     load('participants.mat') %Load the participants table
     allRatings = struct; %rating results
     choice_mdlfree = struct; %choice behaviour results
@@ -50,11 +50,7 @@
                         end
                         allRatings.perStudy.(which_ratings{R}) = study_data;
                     end
-                    
                 end
-                
-        %% Physiology data
-            %...
             
         %% Choice data
             %Exclude choice types from datasets that are dissimilar to the same type in other studies
