@@ -1,13 +1,12 @@
 %% Analysis of physiology
 
 % General settings
-    data_directory = 'C:\Users\rheerema\OneDrive\Experiment data\MoodChoicePhysiology2024'; %Fill in the directory where the data is stored here
+    data_directory = 'C:\Users\Roeland\OneDrive\Experiment data\MoodChoicePhysiology2024'; %Fill in the directory where the data is stored here
     load('participants.mat') %Load the participants table
     phys = {'EDA','pupil','zygomaticus','corrugator'}; %physiological signals
-    samples_EDA = 1:101; %Induction epoch for skin conductance data
-    samples_EMG = 151:651; %Induction epoch for facial musculature data
+    samples_EDA = 10:110; %Induction epoch for skin conductance data
+    samples_EMG = 150:650; %Induction epoch for facial musculature data
     samples_pupil = 1:601; %Induction epoch for facial musculature data
-    EMG_kernel = 20; %Extra smoothing kernel for EMG (400ms)
     physiology_averages_HSN = struct; %results for happy/sad/neutral
     physiology_averages_AFN = struct; %results for anger/fear/neutral
 
@@ -34,31 +33,16 @@
                                     phys_data = cell2mat(cellfun(@(x)(x(:,samples_EDA)),...
                                         AllData.EDA.induction(i_cond & ~cellfun(@isempty,AllData.EDA.induction)),'UniformOutput',false));
                                 case 'zygomaticus'
-                                    phys_data = cell2mat(AllData.EMG.zygomaticus(i_cond & ~cellfun(@isempty,AllData.EMG.zygomaticus)));
-                                    if ~isempty(phys_data)
-                                        for k = 1:size(phys_data,1)
-                                            if ~all(isnan(phys_data(k,:)))
-                                                phys_data(k,:) = ft_preproc_smooth(phys_data(k,:),EMG_kernel); %extra smoothing
-                                            end
-                                        end
-                                        phys_data = phys_data(:,samples_EMG);
-                                    end
+                                    phys_data = cell2mat(cellfun(@(x)(x(:,samples_EMG)),...
+                                        AllData.EMG.zygomaticus(i_cond & ~cellfun(@isempty,AllData.EMG.zygomaticus)),'UniformOutput',false));
                                 case 'corrugator'
-                                    phys_data = cell2mat(AllData.EMG.corrugator(i_cond & ~cellfun(@isempty,AllData.EMG.corrugator)));
-                                    if ~isempty(phys_data)
-                                        for k = 1:size(phys_data,1)
-                                            if ~all(isnan(phys_data(k,:)))
-                                                phys_data(k,:) = ft_preproc_smooth(phys_data(k,:),EMG_kernel); %extra smoothing
-                                            end
-                                        end
-                                        phys_data = phys_data(:,samples_EMG);
-                                    end
+                                    phys_data = cell2mat(cellfun(@(x)(x(:,samples_EMG)),...
+                                        AllData.EMG.corrugator(i_cond & ~cellfun(@isempty,AllData.EMG.corrugator)),'UniformOutput',false));
                             end
                         %Get average
                             if isempty(phys_data)
                                 physiology_averages_HSN.(phys{j}){ppt,emo} = [];
                             else
-                                phys_data = phys_data-phys_data(:,1); %baseline-correction
                                 physiology_averages_HSN.(phys{j}){ppt,emo} = nanmean(phys_data);
                             end
                     end
@@ -77,31 +61,16 @@
                                         phys_data = cell2mat(cellfun(@(x)(x(:,samples_EDA)),...
                                             AllData.EDA.AFN.induction(i_cond & ~cellfun(@isempty,AllData.EDA.AFN.induction)),'UniformOutput',false));
                                     case 'zygomaticus'
-                                        phys_data = cell2mat(AllData.EMG.AFN.zygomaticus(i_cond & ~cellfun(@isempty,AllData.EMG.AFN.zygomaticus)));
-                                        if ~isempty(phys_data)
-                                            for k = 1:size(phys_data,1)
-                                                if ~all(isnan(phys_data(k,:)))
-                                                    phys_data(k,:) = ft_preproc_smooth(phys_data(k,:),EMG_kernel); %extra smoothing
-                                                end
-                                            end
-                                            phys_data = phys_data(:,samples_EMG);
-                                        end
+                                        phys_data = cell2mat(cellfun(@(x)(x(:,samples_EMG)),...
+                                            AllData.EMG.AFN.zygomaticus(i_cond & ~cellfun(@isempty,AllData.EMG.AFN.zygomaticus)),'UniformOutput',false));
                                     case 'corrugator'
-                                        phys_data = cell2mat(AllData.EMG.AFN.corrugator(i_cond & ~cellfun(@isempty,AllData.EMG.AFN.corrugator)));
-                                        if ~isempty(phys_data)
-                                            for k = 1:size(phys_data,1)
-                                                if ~all(isnan(phys_data(k,:)))
-                                                    phys_data(k,:) = ft_preproc_smooth(phys_data(k,:),EMG_kernel); %extra smoothing
-                                                end
-                                            end
-                                            phys_data = phys_data(:,samples_EMG);
-                                        end
+                                        phys_data = cell2mat(cellfun(@(x)(x(:,samples_EMG)),...
+                                            AllData.EMG.AFN.corrugator(i_cond & ~cellfun(@isempty,AllData.EMG.AFN.corrugator)),'UniformOutput',false));
                                 end %switch   
                             %Get average
                                 if isempty(phys_data)
                                     physiology_averages_AFN.(phys{j}){ppt,i_emo} = [];
                                 else
-                                    phys_data = phys_data-phys_data(:,1); %baseline-correction
                                     physiology_averages_AFN.(phys{j}){ppt,i_emo} = nanmean(phys_data);
                                 end
                         end %for ii
