@@ -78,9 +78,99 @@
                 end %if HSN or AFN
             end %for emo
         %Get single-number physiology scores per induction
-            %...
+            physiology = table;
+            for j = 1:length(phys)
+                %Select data
+                    switch phys{j}
+                        case 'pupil'
+                            i_trials = ismember(AllData.affect.condition, [1,2,5]) & ~cellfun(@isempty,AllData.pupil.induction);
+                            phys_data = cell2mat(cellfun(@(x)(x(:,samples_pupil)), AllData.pupil.induction(i_trials),'UniformOutput',false));
+                            phys_data = nanmedian(phys_data,2); %#ok<*NANMEDIAN>
+                        case 'EDA'
+                            i_trials = ismember(AllData.affect.condition, [1,2,5]);
+                            phys_data = AllData.EDA.pspm_amplitudes(i_trials);
+                        case 'zygomaticus'
+                            i_trials = ismember(AllData.affect.condition, [1,2,5]) & ~cellfun(@isempty,AllData.EMG.zygomaticus);
+                            phys_data = cell2mat(cellfun(@(x)(x(:,samples_EMG)),AllData.EMG.zygomaticus(i_trials),'UniformOutput',false));
+                            phys_data = nanmedian(phys_data,2); %#ok<*NANMEDIAN>
+                        case 'corrugator'
+                            i_trials = ismember(AllData.affect.condition, [1,2,5]) & ~cellfun(@isempty,AllData.EMG.corrugator);
+                            phys_data = cell2mat(cellfun(@(x)(x(:,samples_EMG)),AllData.EMG.corrugator(i_trials),'UniformOutput',false));
+                            phys_data = nanmedian(phys_data,2); %#ok<*NANMEDIAN>
+                    end
+                %Data correction
+                    switch participants.study(ppt)
+                        case 1; s = kron(1:4,ones(1,15));
+                        case 2; s = kron(1:3,ones(1,25));
+                        case 3; s = kron(1:3,ones(1,20));
+                        case 4; s = kron(1:2,ones(1,30));
+                    end
+                    sessionNumber = s(AllData.affect.induction)'; %Session number within experiment
+                    fit_model = fitglm([AllData.affect.induction(i_trials),sessionNumber(i_trials)],phys_data,'CategoricalVars',[false,true]);
+                    phys_data = fit_model.Residuals.Raw;
+                %Standardize
+                    phys_data = nanzscore(phys_data);
+                %Store
+                    physiology.(phys{j}) =  NaN(length(AllData.affect.condition),1);
+                    physiology.(phys{j})(i_trials) = phys_data;
+            end %for j
+        %Get behavioural measures for correlating
+            rated_mood = nanzscore(AllData.affect.RateHappy-AllData.affect.RateSad);
+            ratings = nanzscore([AllData.affect.RateHappy,AllData.affect.RateSad,AllData.affect.RateAngry,AllData.affect.RateFear,NaN(size(AllData.affect.RateHappy))]);
+            target_rating = NaN(size(AllData.affect.induction));
+            choice_rate = NaN(size(AllData.affect.induction));
+            for ind = 1:length(choice_rate)
+                if ismember(AllData.affect.condition(ind),[1,2,5])
+                    choice_rate(ind) = nanmean(AllData.trialinfo.choiceLL(AllData.trialinfo.induction==AllData.affect.induction(ind)));
+                end
+                target_rating(ind) = ratings(ind,AllData.affect.condition(ind));
+            end
+        %Get physiological arousal summary measure
+%             results(ppt).physArousal = mean([physiology.pupil,physiology.EDA],2);
+%             arousal = NaN(size(trialinfo,1),1);
+%             for i = 1:length(score)
+%                 arousal(trialinfo.induction==Affectdata.induction(i)) = score(i);
+%             end
+        %Get mood proxy measure from EMG
+%             valence = NaN(size(trialinfo,1),1);
+%             EMGdelta = EMG_MakeDeltaSignal(Affectdata,[],participant_list(ppt).dataset,participant_list(ppt).study); 
+%             for i = 1:length(EMGdelta)
+%                 valence(trialinfo.induction==Affectdata.induction(i)) = EMGdelta(i);
+%             end
+        %Orthogonalize
+%             [~,fit] = RH_GLM(arousal,valence);
+%             valence = fit.Residuals.Raw;
+%         %Only take the sign
+%             valence = tanh(valence);
+%             results(ppt).arousal = arousal;
+%             results(ppt).valence = valence;
+        %Core affect signal
+%             CoreAffect = valence.*arousal./trialinfo.ind_trialno;
+        %Get residuals
+%             res = ...
+%             betas = RH_GLM(CoreAffect,res);
+%             analysis.beta_signal(ppt,:) = betas';
+%             results(ppt).CoreAffect = CoreAffect;
+        %Bin the signals according to valence
+%         n_bins = 9;
+%         [sortVal,I] = sort(nanzscore(trialinfo.valence));
+%         sortPhysAr = arousal(I);
+%         sortEMG = valence(I);
+%         n_per_bin = ceil(sum(~isnan(sortVal))/n_bins);
+%         if n_per_bin * n_bins > length(sortVal)
+%             n_per_bin = floor(sum(~isnan(sortVal))/n_bins);
+%         end
+%         for bin = 1:n_bins
+%             i_bin = (bin-1)*n_per_bin + (1:n_per_bin);
+%             analysis.binned_PhysArousal(ppt,bin) = nanmean(sortPhysAr(i_bin));
+%             analysis.binned_valence(ppt,bin) = nanmean(sortVal(i_bin));
+%             analysis.binned_EMGvalence(ppt,bin) = nanmean(sortEMG(i_bin));
+%         end
+            
     end %for ppt
 
+% Correlate with beta_mood
+    %...
 
 % Save
-    save([cd filesep 'Results\physiology_averages'],'physiology_averages_AFN','physiology_averages_HSN')
+%     save([cd filesep 'Results\physiology_averages'],'physiology_averages_AFN','physiology_averages_HSN')
