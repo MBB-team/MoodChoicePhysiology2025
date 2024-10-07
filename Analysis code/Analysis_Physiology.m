@@ -1,14 +1,21 @@
 %% Analysis of physiology
 
 % General settings
-    data_directory = 'C:\Users\Roeland\OneDrive\Experiment data\MoodChoicePhysiology2024'; %Fill in the directory where the data is stored here
+    data_directory = 'C:\Users\rheerema\OneDrive\Experiment data\MoodChoicePhysiology2024'; %Fill in the directory where the data is stored here
     load('participants.mat') %Load the participants table
+    load('choiceModelBased_noMood.mat') %Load the winning choice model that does not include mood
     phys = {'EDA','pupil','zygomaticus','corrugator'}; %physiological signals
     samples_EDA = 10:110; %Induction epoch for skin conductance data
     samples_EMG = 150:650; %Induction epoch for facial musculature data
     samples_pupil = 1:601; %Induction epoch for facial musculature data
     physiology_averages_HSN = struct; %results for happy/sad/neutral
     physiology_averages_AFN = struct; %results for anger/fear/neutral
+    study_sessions = {kron(1:4,ones(1,15)),kron(1:3,ones(1,25)),kron(1:3,ones(1,20)),kron(1:2,ones(1,30))}; %division of experiment into sessions, per study
+    include_choicetypes = {[1,3],[2,3],1:3,1:3}; %cost types to include, per study
+    physiology_correlations = NaN(7,7,size(participants,1)); %predefine correlation matrix
+    beta_mood_residuals = NaN(size(participants,1),2); %predefine regression coefficient matrix
+    binned_physiology = struct; %predefine the structure that contains binned data
+    n_bins = 9; %number of bins
 
 % Loop through participants
     for ppt = 1:size(participants,1)
@@ -98,16 +105,13 @@
                             phys_data = cell2mat(cellfun(@(x)(x(:,samples_EMG)),AllData.EMG.corrugator(i_trials),'UniformOutput',false));
                             phys_data = nanmedian(phys_data,2); %#ok<*NANMEDIAN>
                     end
-                %Data correction
-                    switch participants.study(ppt)
-                        case 1; s = kron(1:4,ones(1,15));
-                        case 2; s = kron(1:3,ones(1,25));
-                        case 3; s = kron(1:3,ones(1,20));
-                        case 4; s = kron(1:2,ones(1,30));
+                %Correct for session number
+                    if any(i_trials)
+                        sessionNumber = study_sessions{participants.study(ppt)};
+                        sessionNumber = sessionNumber(AllData.affect.induction)'; %Session number within experiment
+                        fit_model = fitglm([AllData.affect.induction(i_trials),sessionNumber(i_trials)],phys_data,'CategoricalVars',[false,true]);
+                        phys_data = fit_model.Residuals.Raw;
                     end
-                    sessionNumber = s(AllData.affect.induction)'; %Session number within experiment
-                    fit_model = fitglm([AllData.affect.induction(i_trials),sessionNumber(i_trials)],phys_data,'CategoricalVars',[false,true]);
-                    phys_data = fit_model.Residuals.Raw;
                 %Standardize
                     phys_data = nanzscore(phys_data);
                 %Store
@@ -116,61 +120,98 @@
             end %for j
         %Get behavioural measures for correlating
             rated_mood = nanzscore(AllData.affect.RateHappy-AllData.affect.RateSad);
-            ratings = nanzscore([AllData.affect.RateHappy,AllData.affect.RateSad,AllData.affect.RateAngry,AllData.affect.RateFear,NaN(size(AllData.affect.RateHappy))]);
+            rated_mood(~ismember(AllData.affect.condition,[1,2,5])) = NaN;
+            if strcmp(participants.experiment,'exploratory')
+                ratings = nanzscore([AllData.affect.RateHappy,AllData.affect.RateSad,AllData.affect.RateAngry,AllData.affect.RateFear,NaN(size(AllData.affect.RateHappy))]);
+            elseif strcmp(participants.experiment,'confirmatory')
+                ratings = nanzscore([AllData.affect.RateHappy,AllData.affect.RateSad,NaN(length(AllData.affect.RateHappy),3)]);
+            end
             target_rating = NaN(size(AllData.affect.induction));
             choice_rate = NaN(size(AllData.affect.induction));
             for ind = 1:length(choice_rate)
                 if ismember(AllData.affect.condition(ind),[1,2,5])
-                    choice_rate(ind) = nanmean(AllData.trialinfo.choiceLL(AllData.trialinfo.induction==AllData.affect.induction(ind)));
+                    ii_trials = ismember(AllData.trialinfo.choicetype,include_choicetypes{participants.study(ppt)}) & ...
+                        AllData.trialinfo.induction==AllData.affect.induction(ind);
+                    choice_rate(ind) = nanmean(AllData.trialinfo.choiceLL(ii_trials));
                 end
                 target_rating(ind) = ratings(ind,AllData.affect.condition(ind));
             end
-        %Get physiological arousal summary measure
-%             results(ppt).physArousal = mean([physiology.pupil,physiology.EDA],2);
-%             arousal = NaN(size(trialinfo,1),1);
-%             for i = 1:length(score)
-%                 arousal(trialinfo.induction==Affectdata.induction(i)) = score(i);
-%             end
-        %Get mood proxy measure from EMG
-%             valence = NaN(size(trialinfo,1),1);
-%             EMGdelta = EMG_MakeDeltaSignal(Affectdata,[],participant_list(ppt).dataset,participant_list(ppt).study); 
-%             for i = 1:length(EMGdelta)
-%                 valence(trialinfo.induction==Affectdata.induction(i)) = EMGdelta(i);
-%             end
-        %Orthogonalize
-%             [~,fit] = RH_GLM(arousal,valence);
-%             valence = fit.Residuals.Raw;
-%         %Only take the sign
-%             valence = tanh(valence);
-%             results(ppt).arousal = arousal;
-%             results(ppt).valence = valence;
-        %Core affect signal
-%             CoreAffect = valence.*arousal./trialinfo.ind_trialno;
-        %Get residuals
-%             res = ...
-%             betas = RH_GLM(CoreAffect,res);
-%             analysis.beta_signal(ppt,:) = betas';
-%             results(ppt).CoreAffect = CoreAffect;
-        %Bin the signals according to valence
-%         n_bins = 9;
-%         [sortVal,I] = sort(nanzscore(trialinfo.valence));
-%         sortPhysAr = arousal(I);
-%         sortEMG = valence(I);
-%         n_per_bin = ceil(sum(~isnan(sortVal))/n_bins);
-%         if n_per_bin * n_bins > length(sortVal)
-%             n_per_bin = floor(sum(~isnan(sortVal))/n_bins);
-%         end
-%         for bin = 1:n_bins
-%             i_bin = (bin-1)*n_per_bin + (1:n_per_bin);
-%             analysis.binned_PhysArousal(ppt,bin) = nanmean(sortPhysAr(i_bin));
-%             analysis.binned_valence(ppt,bin) = nanmean(sortVal(i_bin));
-%             analysis.binned_EMGvalence(ppt,bin) = nanmean(sortEMG(i_bin));
-%         end
-            
+            correlation_data = [physiology.pupil,physiology.EDA,physiology.zygomaticus,physiology.corrugator,...
+                rated_mood,choice_rate,target_rating];
+            physiology_correlations(:,:,ppt) = RH_Corr(correlation_data);
+        %Get choice trial info
+            ii_trials = ismember(AllData.trialinfo.choicetype,include_choicetypes{participants.study(ppt)}) & ...
+                ismember(AllData.trialinfo.condition,[1,2,5]);
+            trialinfo = AllData.trialinfo(ii_trials,:);
+        %Get physiological arousal proxy measure
+            proxy_arousal = mean([physiology.pupil,physiology.EDA],2);
+            proxy_arousal = RH_Normalize(proxy_arousal);
+            trialinfo.proxy_arousal = NaN(size(trialinfo.induction));
+            for trl = 1:size(trialinfo,1)
+                trialinfo.proxy_arousal(trl) = proxy_arousal(trialinfo.induction(trl));
+            end
+        %Get physiological valence proxy measure
+            proxy_valence = physiology.zygomaticus-physiology.corrugator;
+            fit_model = fitglm(proxy_arousal,proxy_valence);
+            proxy_valence = fit_model.Residuals.Raw; %orthogonalise valence w.r.t. arousal
+            proxy_valence = tanh(proxy_valence); %rescale
+            trialinfo.proxy_valence = NaN(size(trialinfo.induction));
+            for trl = 1:size(trialinfo,1)
+                trialinfo.proxy_valence(trl) = proxy_valence(trialinfo.induction(trl));
+            end
+        %Bin the valence and arousal proxies based on rated mood
+            [sorted_mood,I] = sort(rated_mood);
+            sorted_proxy_arousal = proxy_arousal(I);
+            sorted_proxy_valence = proxy_valence(I);
+            n_per_bin = ceil(sum(~isnan(sorted_proxy_valence))/n_bins);
+            if n_per_bin * n_bins > length(sorted_proxy_valence)
+                n_per_bin = floor(sum(~isnan(sorted_proxy_valence))/n_bins);
+            end
+            for bin = 1:n_bins
+                i_bin = (bin-1)*n_per_bin + (1:n_per_bin);
+                binned_physiology.rated_mood(ppt,bin) = nanmean(sorted_mood(i_bin));
+                binned_physiology.proxy_arousal(ppt,bin) = nanmean(sorted_proxy_arousal(i_bin));
+                binned_physiology.proxy_valence(ppt,bin) = nanmean(sorted_proxy_valence(i_bin));                
+            end
+        %Get physiological mood proxy measure -- TO DO: fix this
+            trialinfo.ind_trialno(1) = 1;
+            for trl = 2:size(trialinfo,1)
+                if trialinfo.induction(trl) == trialinfo.induction(trl-1)
+                    trialinfo.ind_trialno(trl) = trialinfo.ind_trialno(trl-1)+1;
+                else
+                    trialinfo.ind_trialno(trl) = 1;
+                end
+            end
+            trialinfo.proxy_mood = trialinfo.proxy_valence.*trialinfo.proxy_arousal./trialinfo.ind_trialno;
+        %Get choice model residuals and regress against physiological mood proxy
+            trialinfo.residuals = winning_model_data.residuals{ppt}';
+            choicerate = nanmean(trialinfo.choiceLL);
+            if choicerate > 0.05 && choicerate < 0.95 %otherwise regression won't work
+                fit_model_rated = fitglm(trialinfo.mood,trialinfo.residuals);
+                beta_mood_residuals(ppt,1) = fit_model_rated.Coefficients.Estimate(2);
+                fit_model_proxy = fitglm(trialinfo.proxy_mood,trialinfo.residuals);
+                beta_mood_residuals(ppt,2) = fit_model_proxy.Coefficients.Estimate(2);
+            end
+        %Bin the choice model residuals based on the physiological mood proxy
+            [sorted_proxy,I] = sort(trialinfo.proxy_mood);
+            sorted_residuals = trialinfo.residuals(I);
+            n_per_bin = ceil(sum(~isnan(sorted_proxy))/n_bins);
+            if n_per_bin * n_bins > length(sorted_proxy)
+                n_per_bin = floor(sum(~isnan(sorted_proxy))/n_bins);
+            end
+            for bin = 1:n_bins
+                i_bin = (bin-1)*n_per_bin + (1:n_per_bin);
+                binned_physiology.proxy_mood(ppt,bin) = nanmean(sorted_proxy(i_bin));
+                binned_physiology.residuals(ppt,bin) = nanmean(sorted_residuals(i_bin));
+            end
     end %for ppt
 
-% Correlate with beta_mood
-    %...
+% Correct missing data
+    fields = fieldnames(binned_physiology);
+    for f = 1:length(fields)
+        binned_physiology.(fields{f})(~participants.biopac,:) = NaN;
+    end
 
 % Save
-%     save([cd filesep 'Results\physiology_averages'],'physiology_averages_AFN','physiology_averages_HSN')
+    save([cd filesep 'Results\physiology_averages'],'physiology_averages_AFN','physiology_averages_HSN')
+    save([cd filesep 'Results\physiology_analysis'],'physiology_correlations','beta_mood_residuals','binned_physiology')
