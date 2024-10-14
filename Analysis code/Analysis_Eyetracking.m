@@ -1,7 +1,7 @@
 
 % Settings
-    screenX = 1920; %screen width
-    screenY = 1080; %screen height  
+    screenX = 1920/8; %screen width (for heatmap)
+    screenY = 1080/8; %screen height (for heatmap)
     smoothing_angle = 3;
     data_directory = 'C:\Users\rheerema\OneDrive\Experiment data\MoodChoicePhysiology2024';
     samplingrate = 60; %Hz
@@ -15,25 +15,28 @@
 for ppt = 1:size(participants,1)
     %Load data
         disp(['PPT# ' num2str(ppt)])
-        load([data_directory filesep participants.dataset{ppt} filesep 'AllGazeData.mat']);
         load([data_directory filesep participants.dataset{ppt} filesep 'AllData.mat']);
+        load([data_directory filesep participants.dataset{ppt} filesep 'AllGazeData.mat']);
     %Make difference heatmap of happy vs. sad induction choices
         heatmaps = cell(1,2);
         for cond = 1:2
             select_trials = AllData.trialinfo.condition == cond;
-            keyboard
             %Loop through selected trials
                 screen_gaze = zeros(screenY,screenX); %Blank map
                 for trl = find(select_trials)'
-                    pupil_X = AllGazeData(trl).pupil_X{:};
-                    pupil_Y = AllGazeData(trl).pupil_Y{:};
-                    if length(pupil_X)>samplingrate
-                        pupil_X = pupil_X(1:samplingrate);
-                        pupil_Y = pupil_Y(1:samplingrate);
-                    end
-                    [pixel_index,gaze_density] = ConvolveGaze(pupil_X,pupil_Y,smoothing_angle);
-                    if ~isempty(pixel_index)
-                        screen_gaze(pixel_index) = screen_gaze(pixel_index) + gaze_density;
+                    if isempty(AllGazeData(trl).pupil_X)
+                        continue
+                    else
+                        pupil_X = AllGazeData(trl).pupil_X{:};
+                        pupil_Y = AllGazeData(trl).pupil_Y{:};
+                        if length(pupil_X)>samplingrate
+                            pupil_X = pupil_X(1:samplingrate);
+                            pupil_Y = pupil_Y(1:samplingrate);
+                        end
+                        [pixel_index,gaze_density] = ConvolveGaze(pupil_X,pupil_Y,smoothing_angle,screenX,screenY);
+                        if ~isempty(pixel_index)
+                            screen_gaze(pixel_index) = screen_gaze(pixel_index) + gaze_density;
+                        end
                     end
                 end
             %Make a normalized heatmap
@@ -76,11 +79,9 @@ end
 
 %% Subfunctions
 
-function [i_nonzero,trl_gaze] = ConvolveGaze(pupil_X,pupil_Y,smoothing_angle)
+function [i_nonzero,trl_gaze] = ConvolveGaze(pupil_X,pupil_Y,smoothing_angle,screenX,screenY)
 
 %Settings
-    screenX = 1920; %PRISME screen width
-    screenY = 1080; %PRISME screen height  
     screen_distance = 80; %[cm] distance from the PPT's eyes to screen (approximately)
     screen_width = 51; %[cm] width of the active area of the screen
     I = reshape(1:screenX*screenY,screenY,screenX); %Pixel indices

@@ -13,6 +13,8 @@
     color_LL = [221,28,119]./255;
     color_SS = [201,148,199]./255;
     color_rect = [[231,225,239]./255, 0.5];
+    screenX = 1920/8; %PRISME screen width
+    screenY = 1080/8; %PRISME screen height  
 
 % Gather data
     heatmaps = NaN(screenY,screenX,length(gazeresults));
@@ -43,8 +45,6 @@
     subplot(2,3,1:2); hold on
     % Settings
         color = [1 1 1];
-        screenX = 1920; %PRISME screen width
-        screenY = 1080; %PRISME screen height  
         screen_distance = 80; %[cm] distance from the PPT's eyes to screen (approximately)
         screen_width = 51; %[cm] width of the active area of the screen
         margin = tan(2/180*pi)*screen_distance/screen_width;
@@ -84,7 +84,7 @@
         hp2 = PrettyPatchPlot(X,nanmean(freq_LL),SEM_LL,color_LL); %LL option
         L=line(mean(medianRT)*ones(1,2),[0,1],'LineWidth',2,'Color',1/3*ones(1,3),'LineStyle','--');
         ylim([0,0.6]); box on
-        xlabel('Time since option display [s]'); ylabel('Gaze proportion'); legend([hp1,hp2],{'costly','uncostly'})        
+        xlabel('Time since option display [s]'); ylabel('Gaze proportion'); legend([hp1,hp2,L],{'uncostly','costly','median RT'})        
 
 %% Panel C -- Choice rate vs. gaze rate
     subplot(2,3,3); hold on; box on
@@ -96,7 +96,7 @@
     Y = Y';
     patch([X X(end:-1:1)], [Y+E Y(end:-1:1)-E(end:-1:1)], color_LL, 'facealpha', 0.05, 'Edgecolor', color_LL);
     plot(X, Y, 'linestyle', '-', 'LineWidth', 2, 'color', color_LL);
-    xlabel('Costly option gaze proportion'); ylabel('Costly option choice rate')
+    xlabel('Costly option gaze proportion'); ylabel('Costly option choice rate'); ylim([0,1])
 
 %% Panel D -- LL chosen: Gaze rate vs. RT
     subplot(2,3,6); cla; hold on; box on
