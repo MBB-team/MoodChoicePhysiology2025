@@ -1,10 +1,15 @@
 
 % Data
-    data = allRatings.beta_target_trl;
+    data = squeeze(physiology_correlations(3:4,5,:))';
     is_percentage = false;
-    effect_name = 'b';
+    effect_name = 'R';
+    split_studies = false;
 % Run test
-    ii_exp = strcmp(participants.experiment,'exploratory');
+    if split_studies
+        ii_exp = strcmp(participants.experiment,'exploratory');
+    else
+        ii_exp = true(length(data),1);
+    end
     [~,p1,CI1,stats1] = ttest(data(ii_exp,:));
     [~,p2,CI2,stats2] = ttest(data(~ii_exp,:));
     M_expl = nanmean(data(ii_exp,:))';

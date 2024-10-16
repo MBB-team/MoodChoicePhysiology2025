@@ -109,7 +109,8 @@
                     end
                 %Data correction
                     if any(i_trials)
-                        fit_model = fitglm([AllData.affect.induction(i_trials),sessionNumber(i_trials)],phys_data,'CategoricalVars',[false,true]);
+%                         fit_model = fitglm([AllData.affect.induction(i_trials),sessionNumber(i_trials)],phys_data,'CategoricalVars',[false,true]);
+                        fit_model = fitglm(sessionNumber(i_trials),phys_data,'CategoricalVars',true);
                         phys_data = fit_model.Residuals.Raw; %Correct for trial number and session number
                         phys_data = nanzscore(phys_data); %Standardize
                     end
@@ -121,9 +122,9 @@
             rated_mood = nanzscore(AllData.affect.RateHappy-AllData.affect.RateSad);
             rated_mood(~ismember(AllData.affect.condition,[1,2,5])) = NaN;
             if strcmp(participants.experiment(ppt),'exploratory')
-                ratings = nanzscore([AllData.affect.RateHappy,AllData.affect.RateSad,AllData.affect.RateAngry,AllData.affect.RateFear,NaN(size(AllData.affect.RateHappy))]);
+                ratings = [AllData.affect.RateHappy,AllData.affect.RateSad,AllData.affect.RateAngry,AllData.affect.RateFear,NaN(size(AllData.affect.RateHappy))];
             elseif strcmp(participants.experiment(ppt),'confirmatory')
-                ratings = nanzscore([AllData.affect.RateHappy,AllData.affect.RateSad,NaN(length(AllData.affect.RateHappy),3)]);
+                ratings = [AllData.affect.RateHappy,AllData.affect.RateSad,NaN(length(AllData.affect.RateHappy),3)];
             end
             target_rating = NaN(size(AllData.affect.induction));
             choice_rate = NaN(size(AllData.affect.induction));
