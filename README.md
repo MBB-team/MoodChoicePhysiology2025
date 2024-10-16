@@ -27,7 +27,7 @@ Data is stored in a unique folder per participant:
   * _pupil_: per-induction pupil diameter response data
   * _EDA_: per-induction electrodermal activity 
   * _EMG_: per-induction electromyography 
-* In studies where physiology was recorded with a BIOPAC setup (see [https://www.biopac.com/](url)), the file `BiopacDataset.mat` contains the raw data as outputted by the _AckKnowledge_ software.
-* In studies where eyetracking was performed with an EyeTribe camera (see [https://github.com/EyeTribe/documentation](url)), the (large!) file `AllGazeData.mat` contains the per-choice gaze position data. The raw data outputted by the Eyetribe (also containing raw pupil diameter data) can be found in the folder `Eyetracking`. Each file contains data from one trial (i.e. induction followed by a series of choice trials).
+* In studies where physiology was recorded with a BIOPAC setup (see [https://www.biopac.com/](url)), the file `BiopacDataset.mat` contains the raw data as outputted by the _AcqKnowledge_ software.
+* In studies where eyetracking was performed with an EyeTribe camera (see [https://github.com/EyeTribe/documentation](url)), the file `AllGazeData.mat` contains the per-choice gaze position data. The raw data outputted by the Eyetribe (also containing raw pupil diameter data) can be found in the folder `Eyetracking`. Each file contains data from one trial (i.e. induction followed by a series of choice trials).
 
 The meaning of each of the variables in each of these files is explained in the file `Dataset variables explainer.xlsx`.
