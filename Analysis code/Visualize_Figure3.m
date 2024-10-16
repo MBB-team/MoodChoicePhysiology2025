@@ -31,8 +31,8 @@
         %Do RFT
             y = [pupil{1}; pupil{2}; pupil{3}];
             data = ft_preproc_smooth(y,10); y = data; %Small amount of smoothing for RFT
-            [~,out_HN] = RFT_GLM_contrast(X,y,c_HN,'F',1,0); 
-            [~,out_SN] = RFT_GLM_contrast(X,y,c_SN,'F',1,0); 
+            [~,out_HN] = RFT_GLM_contrast(X,y,c_HN,'F',[],0); 
+            [~,out_SN] = RFT_GLM_contrast(X,y,c_SN,'F',[],0); 
         %Plot pupil   
             emocolors = EmotionColors([1,2,5],:);
             for emo = 1:3
@@ -45,13 +45,11 @@
             end
         %Plot RFT
             %Significant cluster difference of happy vs. neutral
-%                 ii_cluster = cell2mat(out_HN.clusters.ind);
                 ii_cluster = cell2mat(out_HN.clusters.ind(out_HN.clusters.prft<0.05));
                 rftH = linspace(X(ii_cluster(1)),X(ii_cluster(end)));
                 plot(rftH,0.8*ones(size(rftH)),'color',emocolors(1,:),'LineWidth',4)
             %Significant cluster difference of sad vs. neutral
-%                 ii_cluster = cell2mat(out_SN.clusters.ind);
-                ii_cluster = cell2mat(out_HN.clusters.ind(out_HN.clusters.prft<0.05));
+                ii_cluster = cell2mat(out_SN.clusters.ind(out_SN.clusters.prft<0.05));
                 rftS = linspace(X(ii_cluster(1)),X(ii_cluster(end)));
                 plot(rftS,0.75*ones(size(rftS)),'color',emocolors(2,:),'LineWidth',4)
         %Layout
@@ -69,8 +67,8 @@
         %Do RFT
             y = [pupil{1}; pupil{2}; pupil{3}];
             data = ft_preproc_smooth(y,10); y = data; %Small amount of smoothing for RFT
-            [~,out_AN] = RFT_GLM_contrast(X,y,c_AN,'F',1,0); 
-            [~,out_FN] = RFT_GLM_contrast(X,y,c_FN,'F',1,0); 
+            [~,out_AN] = RFT_GLM_contrast(X,y,c_AN,'F',[],0); 
+            [~,out_FN] = RFT_GLM_contrast(X,y,c_FN,'F',[],0); 
         %Plot pupil   
             emocolors = EmotionColors(3:5,:);
             for emo = 1:3
@@ -83,12 +81,10 @@
             end
         %Plot RFT
             %Significant cluster difference of anger vs. neutral
-%                 ii_cluster = cell2mat(out_AN.clusters.ind);
                 ii_cluster = cell2mat(out_AN.clusters.ind(out_AN.clusters.prft<0.05));
                 rftA = linspace(X(ii_cluster(1)),X(ii_cluster(end)));
                 plot(rftA,0.8*ones(size(rftH)),'color',emocolors(1,:),'LineWidth',4)
             %Significant cluster difference of fear vs. neutral
-%                 ii_cluster = out_FN.clusters.ind{2};
                 ii_cluster = cell2mat(out_FN.clusters.ind(out_FN.clusters.prft<0.05));
                 rftF = linspace(X(ii_cluster(1)),X(ii_cluster(end)));
                 plot(rftF,0.75*ones(size(rftF)),'color',emocolors(2,:),'LineWidth',4)
@@ -106,8 +102,8 @@
             EDA = {cell2mat(EDA(:,1)),cell2mat(EDA(:,2)),cell2mat(EDA(:,3))};
         %Do RFT
             y = cell2mat(EDA');
-            [~,out_HN] = RFT_GLM_contrast(X,y,c_HN,'F',1,0); 
-            [~,out_SN] = RFT_GLM_contrast(X,y,c_SN,'F',1,0); 
+            [~,out_HN] = RFT_GLM_contrast(X,y,c_HN,'F',[],0); 
+            [~,out_SN] = RFT_GLM_contrast(X,y,c_SN,'F',[],0); 
         %Plot EDA
             emocolors = EmotionColors([1,2,5],:);
             for emo = 1:3
@@ -120,12 +116,10 @@
             end
         %Plot RFT
             %Significant cluster difference of happy vs. neutral
-%                 ii_cluster = cell2mat(out_HN.clusters.ind);
                 ii_cluster = cell2mat(out_HN.clusters.ind(out_HN.clusters.prft<0.05));
                 rftH = linspace(X(ii_cluster(1)),X(ii_cluster(end)));
                 plot(rftH,0.15*ones(size(rftH)),'color',emocolors(1,:),'LineWidth',4)
             %Significant cluster difference of sad vs. neutral
-%                 ii_cluster = out_SN.clusters.ind{2};
                 ii_cluster = cell2mat(out_SN.clusters.ind(out_SN.clusters.prft<0.05));
                 rftS = linspace(X(ii_cluster(1)),X(ii_cluster(end)));
                 plot(rftS,0.1*ones(size(rftS)),'color',emocolors(2,:),'LineWidth',4)
@@ -141,8 +135,8 @@
             EDA = {cell2mat(EDA(:,1)),cell2mat(EDA(:,2)),cell2mat(EDA(:,3))};
         %Do RFT
             y = cell2mat(EDA');
-            [~,out_AN] = RFT_GLM_contrast(X,y,c_AN,'F',1,0); 
-            [~,out_FN] = RFT_GLM_contrast(X,y,c_FN,'F',1,0); 
+            [~,out_AN] = RFT_GLM_contrast(X,y,c_AN,'F',[],0); 
+            [~,out_FN] = RFT_GLM_contrast(X,y,c_FN,'F',[],0); 
         %Plot EDA
             emocolors = EmotionColors(3:5,:);
             for emo = 1:3
@@ -154,15 +148,14 @@
                 PrettyPatchPlot(X,Y,SEM,color)
             end
         %Plot RFT
-            %Significant cluster difference of anger vs. neutral
-                ii_cluster = cell2mat(out_AN.clusters.ind(out_AN.clusters.prft<0.05));
-                rftA = linspace(X(ii_cluster(1)+2),X(ii_cluster(end)));
-                plot(rftA,0.15*ones(size(rftA)),'color',emocolors(1,:),'LineWidth',4)
-            %Significant cluster difference of fear vs. neutral
-%                 ii_cluster = cell2mat(out_FN.clusters.ind);
-                ii_cluster = cell2mat(out_FN.clusters.ind(out_FN.clusters.prft<0.05));
-                rftF = linspace(X(ii_cluster(1)+2),X(ii_cluster(end)));
-                plot(rftF,0.1*ones(size(rftF)),'color',emocolors(2,:),'LineWidth',4)
+            %No significant cluster difference of anger vs. neutral
+                % ii_cluster = cell2mat(out_AN.clusters.ind(out_AN.clusters.prft<0.05));
+                % rftA = linspace(X(ii_cluster(1)+2),X(ii_cluster(end)));
+                % plot(rftA,0.15*ones(size(rftA)),'color',emocolors(1,:),'LineWidth',4)
+            %No significant cluster difference of fear vs. neutral
+                % ii_cluster = cell2mat(out_FN.clusters.ind(out_FN.clusters.prft<0.05));
+                % rftF = linspace(X(ii_cluster(1)+2),X(ii_cluster(end)));
+                % plot(rftF,0.1*ones(size(rftF)),'color',emocolors(2,:),'LineWidth',4)
             %Layout
                 xlim([0,10.05]); xticks(0:10); xlabel('Time since induction onset [s]')
                 ylim([-1.1 0.25]); ylabel('Skin conductance (Z)');
@@ -178,7 +171,7 @@
         %Do RFT
             y = cell2mat(zygomaticus');
             y = ft_preproc_smooth(y,20); %extra smoothing so RFT can be performed
-            [~,out_HS] = RFT_GLM_contrast(X,y,c_HS,'F',1,0); 
+            [~,out_HS] = RFT_GLM_contrast(X,y,c_HS,'F',[],0); 
         %Plot zygomaticus
             emocolors = EmotionColors([1,2,5],:);
             for emo = 1:3
@@ -190,7 +183,6 @@
                 PrettyPatchPlot(X,Y,SEM,color)
             end
         %Plot RFT: Significant cluster difference of happy vs. sad
-%             ii_cluster = out_HS.clusters.ind{end};
             ii_cluster = cell2mat(out_HS.clusters.ind(out_HS.clusters.prft<0.05));
             rftH = linspace(X(ii_cluster(1)),X(ii_cluster(end)));
             plot(rftH,1*ones(size(rftH)),'color',EmotionColors(end,:),'LineWidth',4)
@@ -226,7 +218,7 @@
         %Do RFT
             y = cell2mat(corrugator');
             y = ft_preproc_smooth(y,20); %extra smoothing so RFT can be performed
-            [~,out_HS] = RFT_GLM_contrast(X,y,c_HS,'F',1,0); 
+            [~,out_HS] = RFT_GLM_contrast(X,y,c_HS,'F',[],0); 
         %Plot corrugator
             emocolors = EmotionColors([1,2,5],:);
             for emo = 1:3
@@ -238,7 +230,6 @@
                 PrettyPatchPlot(X,Y,SEM,color)
             end
         %Plot RFT: Significant cluster difference of happy vs. sad
-%             ii_cluster = out_HS.clusters.ind{end};
             ii_cluster = cell2mat(out_HS.clusters.ind(out_HS.clusters.prft<0.05));
             rftH = linspace(X(ii_cluster(1)),X(ii_cluster(end)));
             plot(rftH,0.3*ones(size(rftH)),'color',EmotionColors(end,:),'LineWidth',4)

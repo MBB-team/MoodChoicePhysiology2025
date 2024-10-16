@@ -21,16 +21,53 @@
                 AllData.affect.Mood(ismember(AllData.affect.Condition,{'anger','fear'})) = NaN;
                 AllData.affect.Mood = nanzscore(AllData.affect.Mood);
             %Gater results in "allRatings" structure
-                for emo = 1:length(which_emotions)
-                    for R = 1:length(which_ratings)
+                %All ratings per condition
+                    for emo = 1:length(which_emotions)
                         select = AllData.affect.condition==which_emotions(emo);
-                        try
-                            allRatings.(which_ratings{R})(ppt,emo) = nanmean(AllData.affect.(which_ratings{R})(select));
-                        catch
-                            allRatings.(which_ratings{R})(ppt,emo) = NaN;
+                        for R = 1:length(which_ratings)
+                            try
+                                allRatings.(which_ratings{R})(ppt,emo) = nanmean(AllData.affect.(which_ratings{R})(select));
+                            catch
+                                allRatings.(which_ratings{R})(ppt,emo) = NaN;
+                            end
                         end
                     end
-                end
+                %Target rating 
+                    if strcmp(participants.experiment{ppt},'exploratory')
+                        ratings = [AllData.affect.RateHappy,AllData.affect.RateSad,AllData.affect.RateAngry,AllData.affect.RateFear];
+                        i_nontarget = setdiff(1:4,emo);
+                    elseif strcmp(participants.experiment{ppt},'confirmatory')
+                        ratings = [AllData.affect.RateHappy,AllData.affect.RateSad];
+                        i_nontarget = setdiff(1:2,emo);
+                    end
+                    %Difference w.r.t. mean of other ratings
+                        for emo = 1:4 %no target rating for neutral
+                            try
+                                allRatings.deltaTarget(ppt,emo) = nanmean(ratings(AllData.affect.condition==emo,emo) - nanmean(ratings(AllData.affect.condition==emo,i_nontarget),2));
+                            catch %no anger/fear ratings in confirmatory studies
+                                allRatings.deltaTarget(ppt,emo) = NaN;
+                            end
+                        end
+                    %Target rating decline
+                        targetRating = NaN(size(ratings,1),1);
+                        for emo = 1:size(ratings,2) 
+                            targetRating(AllData.affect.condition==emo) = ratings(AllData.affect.condition==emo,emo);
+                        end
+                        fit_model = fitglm(AllData.affect.induction,targetRating);
+                        allRatings.beta_target_trl(ppt,1) = fit_model.Coefficients.Estimate(2);
+                    %Regression against same rating on subsequent induction
+                        ratings = nanzscore(ratings); %must standardize, otherwise correlations will always be positive
+                        targetRating = NaN(size(ratings,1),1); nextRating = targetRating;
+                        for trl = 1:length(targetRating)-1
+                            if AllData.affect.condition(trl) < 5
+                                targetRating(trl) = ratings(trl,AllData.affect.condition(trl));
+                                nextRating(trl) = ratings(trl+1,AllData.affect.condition(trl));
+                            end
+                        end
+                        fit_model = fitglm(targetRating,nextRating);
+                        allRatings.beta_target_next(ppt,1) = fit_model.Coefficients.Estimate(2);
+                %Correlation between rated happiness and sadness
+                    allRatings.R_happySad(ppt,1) = RH_Corr(AllData.affect.RateHappy,AllData.affect.RateSad);
             %Mean and SEM per study (for visualization)
                 if ppt == size(participants,1)
                     include_studies = [0,1]; %[exploratory, confirmatory]
