@@ -99,24 +99,68 @@
                         include_choicetypes(type) = 0;
                     end
                 end
-            %Choice rate per emotion
-                for emo = 1:5
-                    select = ismember(AllData.trialinfo.choicetype,find(include_choicetypes)) & AllData.trialinfo.condition == emo;
-                    choice_mdlfree.choiceRate(ppt,emo) = nanmean(AllData.trialinfo.choiceLL(select));
-                end
-            %Logistic regression against mood                
-                for type = 1:3 %delay, risk, effort
-                    %inclusion criteria
-                        i_select = AllData.trialinfo.choicetype==type;
-                        type_choicerate = nanmean(AllData.trialinfo.choiceLL(i_select)); %can't regress if insufficient variability in choice behaviour
-                        if ~ismember(type,find(include_choicetypes)) || type_choicerate < 0.05 || type_choicerate > 0.95
-                            choice_mdlfree.beta_mood(ppt,type) = NaN;
-                            continue
-                        end
-                    %regress
-                        fit_model = fitglm(AllData.trialinfo.mood(i_select),AllData.trialinfo.choiceLL(i_select),'Distribution','binomial');
-                        choice_mdlfree.beta_mood(ppt,type) = fit_model.Coefficients.Estimate(2);
-                end
+            %Choice rate
+                %Per emotion
+                    for emo = 1:5
+                        select = ismember(AllData.trialinfo.choicetype,find(include_choicetypes)) & AllData.trialinfo.condition == emo;
+                        choice_mdlfree.choiceRate(ppt,emo) = nanmean(AllData.trialinfo.choiceLL(select));
+                    end
+                %Regressed against trial number
+                    fit_model = fitglm(AllData.trialinfo.trial,AllData.trialinfo.choiceLL,'Distribution','binomial');
+                    choice_mdlfree.beta_trialno(ppt,1) = fit_model.Coefficients.Estimate(2);
+            %Logistic regression of choices against ratings               
+                %Per cost type
+                    for type = 1:3 %delay, risk, effort
+                        %inclusion criteria
+                            i_select = AllData.trialinfo.choicetype==type;
+                            type_choicerate = nanmean(AllData.trialinfo.choiceLL(i_select)); %can't regress if insufficient variability in choice behaviour
+                            if ~ismember(type,find(include_choicetypes)) || type_choicerate < 0.05 || type_choicerate > 0.95
+                                choice_mdlfree.beta_mood(ppt,type) = NaN;
+                                choice_mdlfree.beta_RateAngry(ppt,type) = NaN;
+                                choice_mdlfree.beta_RateFear(ppt,type) = NaN;
+                                continue
+                            end
+                        %regress against mood (happy/sad/neutral inductions only)
+                            fit_model = fitglm(AllData.trialinfo.mood(i_select),AllData.trialinfo.choiceLL(i_select),'Distribution','binomial');
+                            choice_mdlfree.beta_mood(ppt,type) = fit_model.Coefficients.Estimate(2);
+                        %regress against anger and fear ratings
+                            if strcmp(participants.experiment(ppt),'exploratory')
+                                ratingData_choice = NaN(size(AllData.trialinfo,1),2);
+                                for emo = 1:2
+                                    if emo == 1; rating = 'RateAngry'; else; rating = 'RateFear'; end
+                                    ratingData_induction = nanzscore(AllData.affect.(rating));
+                                    for trl = 1:length(ratingData_choice)
+                                        ratingData_choice(trl,emo) = ratingData_induction(AllData.trialinfo.induction(trl));
+                                    end
+                                    fit_model = fitglm(ratingData_choice(i_select,emo),AllData.trialinfo.choiceLL(i_select),'Distribution','binomial');
+                                    choice_mdlfree.(['beta_' rating])(ppt,type) = fit_model.Coefficients.Estimate(2);
+                                end
+                            else
+                                choice_mdlfree.beta_RateAngry(ppt,type) = NaN;
+                                choice_mdlfree.beta_RateFear(ppt,type) = NaN;
+                            end
+                    end %for cost type
+                %Across cost types
+                    i_select = ismember(AllData.trialinfo.choicetype,find(include_choicetypes));
+                    if nanmean(AllData.trialinfo.choiceLL(i_select)) >= 0.05 && nanmean(AllData.trialinfo.choiceLL(i_select)) <= 0.95
+                        %Regress against mood
+                            fit_model = fitglm(AllData.trialinfo.mood(i_select),AllData.trialinfo.choiceLL(i_select),'Distribution','binomial');
+                            choice_mdlfree.beta_mood(ppt,4) = fit_model.Coefficients.Estimate(2);
+                        %Regress against anger and fear
+                            if strcmp(participants.experiment(ppt),'exploratory')
+                                fit_model = fitglm(ratingData_choice(i_select,1),AllData.trialinfo.choiceLL(i_select),'Distribution','binomial');
+                                choice_mdlfree.beta_RateAngry(ppt,4) = fit_model.Coefficients.Estimate(2);
+                                fit_model = fitglm(ratingData_choice(i_select,2),AllData.trialinfo.choiceLL(i_select),'Distribution','binomial');
+                                choice_mdlfree.beta_RateFear(ppt,4) = fit_model.Coefficients.Estimate(2);
+                            else
+                                choice_mdlfree.beta_RateAngry(ppt,4) = NaN;
+                                choice_mdlfree.beta_RateFear(ppt,4) = NaN;
+                            end
+                    else
+                        choice_mdlfree.beta_mood(ppt,4) = NaN;
+                        choice_mdlfree.beta_RateAngry(ppt,4) = NaN;
+                        choice_mdlfree.beta_RateFear(ppt,4) = NaN;
+                    end
             %Response time
                 %Get data (only happy/sad/neutral)
                     select = ismember(AllData.trialinfo.choicetype,find(include_choicetypes)) & ismember(AllData.trialinfo.condition,[1,2,5]);
@@ -124,11 +168,11 @@
                     RT(~select) = NaN;
                 %Preprocessing
                     RT_upperlimit = 10; %For trimming: upper limit RT
-                    RT_lowerlimit = 0.5; %For trimming: lower limit RT (already enforced experimentally in studies 3 and 4)
+                    RT_lowerlimit = 0.75; %For trimming: lower limit RT (already enforced experimentally in studies 3 and 4)
                     n_std_exclude = 3; %Remove outliers: +/- n standard deviations from the mean
                     RT(RT > RT_upperlimit) = NaN; %Trim out choices more than 10s
-                    RT(RT < RT_lowerlimit) = NaN; %Trim out choices less than 0.5s
-                    RT(RT > nanmean(RT)+n_std_exclude*nanstd(RT) | RT < nanmean(RT)-n_std_exclude*nanstd(RT)) = NaN; %Choices more or less than 3 standard deviations above or below the mean
+                    RT(RT < RT_lowerlimit) = NaN; %Trim out choices less than 0.75s
+                    RT(RT > nanmean(RT)+n_std_exclude*nanstd(RT) | RT < nanmean(RT)-n_std_exclude*nanstd(RT)) = NaN; %#ok<*NANSTD> %Choices more or less than 3 standard deviations above or below the mean
                     fit_model = fitglm(AllData.trialinfo.trial,RT); %Regress out trial number
                     RT = fit_model.Residuals.Raw;
                     RT = nanzscore(RT); %Standardize
@@ -139,6 +183,9 @@
                     choice_mdlfree.RT_perEmo_LL(ppt,:) = [nanmean(RT(AllData.trialinfo.condition==1 & AllData.trialinfo.choiceLL==1)),...
                         nanmean(RT(AllData.trialinfo.condition==2 & AllData.trialinfo.choiceLL==1)),...
                         nanmean(RT(AllData.trialinfo.condition==5 & AllData.trialinfo.choiceLL==1))];
+                %Regress against chosen option and mood
+                    fit_model = fitglm([AllData.trialinfo.mood,1-AllData.trialinfo.choiceLL],RT,'interactions');
+                    choice_mdlfree.beta_RT(ppt,:) = fit_model.Coefficients.Estimate(2:end)';
     end %for ppt
     
 % Store

@@ -33,7 +33,7 @@
             RT = AllData.trialinfo.RT;
             medianRT(ppt) = nanmedian(RT);
             RT(RT > 10) = NaN; %Trim out choices more than 10s
-            RT(RT < 0.5) = NaN; %Trim out choices less than 0.5s
+            RT(RT < 0.75) = NaN; %Trim out choices less than 0.75s
             RT(RT > nanmean(RT)+3*nanstd(RT) | RT < nanmean(RT)-3*nanstd(RT)) = NaN; %Choices more or less than 3 standard deviations above or below the mean
             fit_model = fitglm(AllData.trialinfo.trial,RT); %Regress out trial number
             RT = fit_model.Residuals.Raw;

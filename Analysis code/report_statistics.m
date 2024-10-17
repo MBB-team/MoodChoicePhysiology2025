@@ -1,9 +1,11 @@
 
 % Data
-    data = squeeze(physiology_correlations(3:4,5,:))';
+    data = choice_mdlfree.RT_perEmo_LL(:,1)-choice_mdlfree.RT_perEmo_LL(:,2);
+    % data(52,:) = NaN;
     is_percentage = false;
-    effect_name = 'R';
-    split_studies = false;
+    effect_name = 'RT';
+    split_studies = true;
+    visualize = false;
 % Run test
     if split_studies
         ii_exp = strcmp(participants.experiment,'exploratory');
@@ -25,8 +27,8 @@
     T = table;
     T.t_expl = round(stats1.tstat',1);
     T.df_expl = stats1.df'; 
-    T.([effect_name '_expl']) = M_expl;
     T.p_expl = p1';
+    T.([effect_name '_expl']) = M_expl;
     T.CI_expl = CI1';
     T.t_conf = round(stats2.tstat',1);
     T.df_conf = stats2.df';
@@ -37,3 +39,11 @@
     clc
     disp(T)
     writetable(T,'results')
+% Visualize
+    if visualize
+        figure; box on
+        RH_Barplot({data(ii_exp,:),data(~ii_exp,:)},[],0);
+        RH_ScatterOverlay({data(ii_exp,:),data(~ii_exp,:)});
+    end
+
+
