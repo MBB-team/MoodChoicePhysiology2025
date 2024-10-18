@@ -1,10 +1,9 @@
 
 % Data
-    data = choice_mdlfree.RT_perEmo_LL(:,1)-choice_mdlfree.RT_perEmo_LL(:,2);
-    % data(52,:) = NaN;
+    data = cell2mat(beta_mood_residuals(:,3)); data = data(:,2:3)
     is_percentage = false;
-    effect_name = 'RT';
-    split_studies = true;
+    effect_name = 'R';
+    split_studies = false;
     visualize = false;
 % Run test
     if split_studies

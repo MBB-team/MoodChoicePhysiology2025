@@ -1,7 +1,7 @@
 %% Analysis of physiology
 
 % General settings
-    data_directory = 'C:\Users\Roeland\OneDrive\Experiment data\MoodChoicePhysiology2024'; %Fill in the directory where the data is stored here
+    data_directory = 'C:\Users\rheerema\OneDrive\Experiment data\MoodChoicePhysiology2024'; %Fill in the directory where the data is stored here
     load('participants.mat') %Load the participants table
     load('choiceModelBased_noMood.mat') %Load the winning choice model that does not include mood
     phys = {'EDA','pupil','zygomaticus','corrugator'}; %physiological signals
@@ -13,7 +13,8 @@
     study_sessions = {kron(1:4,ones(1,15)),kron(1:3,ones(1,25)),kron(1:3,ones(1,20)),kron(1:2,ones(1,30))}; %division of experiment into sessions, per study
     include_choicetypes = {[1,3],[2,3],1:3,1:3}; %cost types to include, per study
     physiology_correlations = NaN(7,7,size(participants,1)); %predefine correlation matrix
-    beta_mood_residuals = cell(size(participants,1),2); %predefine regression coefficient matrix
+    R_mood_rated_proxy = NaN(size(participants,1),1); %predefine the correlation coefficient array
+    beta_mood_residuals = cell(size(participants,1),3); %predefine regression coefficient matrix
     binned_physiology = struct; %predefine the structure that contains binned data
     n_bins = 9; %number of bins
 
@@ -109,7 +110,6 @@
                     end
                 %Data correction
                     if any(i_trials)
-%                         fit_model = fitglm([AllData.affect.induction(i_trials),sessionNumber(i_trials)],phys_data,'CategoricalVars',[false,true]);
                         fit_model = fitglm(sessionNumber(i_trials),phys_data,'CategoricalVars',true);
                         phys_data = fit_model.Residuals.Raw; %Correct for trial number and session number
                         phys_data = nanzscore(phys_data); %Standardize
@@ -173,8 +173,11 @@
                 binned_physiology.proxy_arousal(ppt,bin) = nanmean(sorted_proxy_arousal(i_bin));
                 binned_physiology.proxy_valence(ppt,bin) = nanmean(sorted_proxy_valence(i_bin));                
             end
-        %Get physiological mood proxy measure            
+        %Get physiological mood proxy measure and its correlation with the rated mood
             trialinfo.proxy_mood = trialinfo.proxy_valence.*trialinfo.proxy_arousal./trialinfo.ind_trialno;
+            if ~all(isnan(trialinfo.proxy_mood))
+                R_mood_rated_proxy(ppt) = RH_Corr(trialinfo.proxy_mood,trialinfo.mood);
+            end
         %Get choice model residuals and regress against physiological mood proxy
             trialinfo.residuals = winning_model_data.residuals{ppt}';
             choicerate = nanmean(trialinfo.choiceLL);
@@ -182,10 +185,15 @@
                 fit_model_rated = fitglm(trialinfo.mood,trialinfo.residuals);
                 beta_mood_residuals{ppt,1} = fit_model_rated.Coefficients.Estimate';
                 if ~all(isnan(trialinfo.proxy_mood))
-                    fit_model_proxy = fitglm(trialinfo.proxy_mood,trialinfo.residuals);
-                    beta_mood_residuals{ppt,2} = fit_model_proxy.Coefficients.Estimate';
+                    %Predict residuals with mood proxy
+                        fit_model_proxy = fitglm(trialinfo.proxy_mood,trialinfo.residuals);
+                        beta_mood_residuals{ppt,2} = fit_model_proxy.Coefficients.Estimate';
+                    %Predict residuals with mood proxy and rated mood score
+                        fit_model_both = fitglm([trialinfo.mood,trialinfo.proxy_mood],trialinfo.residuals);
+                        beta_mood_residuals{ppt,3} = fit_model_both.Coefficients.Estimate';
                 else
                     beta_mood_residuals{ppt,2} = NaN(1,2);
+                    beta_mood_residuals{ppt,3} = NaN(1,3);
                 end
             end
         %Bin the choice model residuals based on the physiological mood proxy
@@ -210,4 +218,4 @@
 
 % Save
     save([cd filesep 'Results\physiology_averages'],'physiology_averages_AFN','physiology_averages_HSN')
-    save([cd filesep 'Results\physiology_analysis'],'physiology_correlations','beta_mood_residuals','binned_physiology')
+    save([cd filesep 'Results\physiology_analysis'],'physiology_correlations','beta_mood_residuals','binned_physiology','R_mood_rated_proxy')
