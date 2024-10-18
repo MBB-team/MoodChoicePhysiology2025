@@ -62,16 +62,33 @@ for ppt = 1:size(participants,1)
             %gaze rate in the first second
                 ii_LL_1s = ii_LL(ii_LL<=samplingrate);
                 ii_SS_1s = ii_SS(ii_SS<=samplingrate);
-                total_gazes = length(ii_SS_1s) + length(ii_LL_1s);
                 if total_gazes > 0
-                    gazerate_LL(trl) = length(ii_LL_1s)/total_gazes;
+                    gazerate_LL(trl) = length(ii_LL_1s)/samplingrate;
                 end
         end
         gazeresults(ppt).frequency_LL = {nanmean(freq_LL)};
         gazeresults(ppt).frequency_SS = {nanmean(freq_SS)};
-    %LL option gaze frequency during the first second
-        gazeresults(ppt).gazerate_LL = nanmean(gazerate_LL); %across all choices
-        gazeresults(ppt).gazerate_LL_choice = nanmean(gazerate_LL(AllData.trialinfo.choiceLL==1)); %when costly option is chosen        
+    %First second gaze rate: regressions
+        %Against mood
+            fit_mdl = fitglm(gazerate_LL,AllData.trialinfo.mood);
+            gazeresults(ppt).beta_mood_gaze = fit_mdl.Coefficients.Estimate';
+        %Predict LL choice
+            if nanmean(AllData.trialinfo.choiceLL)<0.05 || nanmean(AllData.trialinfo.choiceLL)>0.95
+                gazeresults(ppt).beta_gaze_choiceLL = NaN(1,2);
+            else
+                fit_mdl = fitglm(gazerate_LL,AllData.trialinfo.choiceLL,'Distribution','binomial');
+                gazeresults(ppt).beta_gaze_choiceLL = fit_mdl.Coefficients.Estimate';
+            end
+        %Predict LL RT
+            RT = AllData.trialinfo.RT;
+            RT(RT > 10) = NaN; %Trim out choices more than 10s
+            RT(RT < 0.75) = NaN; %Trim out choices less than 0.75s
+            RT(RT > nanmean(RT)+3*nanstd(RT) | RT < nanmean(RT)-3*nanstd(RT)) = NaN; %Choices more or less than 3 standard deviations above or below the mean
+            fit_model = fitglm(AllData.trialinfo.trial,RT); %Regress out trial number
+            RT = fit_model.Residuals.Raw;
+            RT = nanzscore(RT); %Standardize
+            fit_mdl = fitglm(gazerate_LL(AllData.trialinfo.choiceLL==1),RT(AllData.trialinfo.choiceLL==1));
+            gazeresults(ppt).beta_gaze_RT_LL = fit_mdl.Coefficients.Estimate';
 end
 
 % Save
@@ -79,6 +96,7 @@ end
 
 %% Subfunctions
 
+%Gaze convolution
 function [i_nonzero,trl_gaze] = ConvolveGaze(pupil_X,pupil_Y,smoothing_angle,screenX,screenY)
 
 %Settings

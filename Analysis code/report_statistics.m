@@ -1,8 +1,8 @@
 
 % Data
-    data = cell2mat(beta_mood_residuals(:,3)); data = data(:,2:3)
+    data = vertcat(gazeresults.beta_gaze_RT_LL); data = data(:,2);
     is_percentage = false;
-    effect_name = 'R';
+    effect_name = 'b';
     split_studies = false;
     visualize = false;
 % Run test

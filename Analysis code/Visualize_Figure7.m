@@ -19,26 +19,14 @@
 % Gather data
     heatmaps = NaN(screenY,screenX,length(gazeresults));
     medianRT = NaN(size(participants,1),1);
-    choicerate = NaN(size(participants,1),1);
-    meanRT_LL = NaN(size(participants,1),1);
     for ppt = 1:length(gazeresults)
         %load dataset
             load([data_directory filesep participants.dataset{ppt} filesep 'AllData.mat'])
             disp(['ppt #' num2str(ppt)])
         %heatmaps
             heatmaps(:,:,ppt) = gazeresults(ppt).delta_heatmap;
-        %costly option choice rate
-            choicerate(ppt) = nanmean(AllData.trialinfo.choiceLL);
-        %RT
-            RT = AllData.trialinfo.RT;
-            medianRT(ppt) = nanmedian(RT);
-            RT(RT > 10) = NaN; %Trim out choices more than 10s
-            RT(RT < 0.75) = NaN; %Trim out choices less than 0.75s
-            RT(RT > nanmean(RT)+3*nanstd(RT) | RT < nanmean(RT)-3*nanstd(RT)) = NaN; %Choices more or less than 3 standard deviations above or below the mean
-            fit_model = fitglm(AllData.trialinfo.trial,RT); %Regress out trial number
-            RT = fit_model.Residuals.Raw;
-            RT = nanzscore(RT); %Standardize
-            meanRT_LL(ppt) = nanmean(RT(AllData.trialinfo.choiceLL==1));
+        %median RT
+            medianRT(ppt) = nanmedian(AllData.trialinfo.RT);
     end
 
 %% Panel A -- Average gaze map
@@ -87,25 +75,23 @@
         xlabel('Time since option display [s]'); ylabel('Gaze proportion'); legend([hp1,hp2,L],{'uncostly','costly','median RT'})        
 
 %% Panel C -- Choice rate vs. gaze rate
-    subplot(2,3,3); hold on; box on
-    gaze_rate = vertcat(gazeresults.gazerate_LL);
-    fit_model = fitglm(gaze_rate,choicerate);
+    betas = vertcat(gazeresults.beta_gaze_choiceLL);
     X = linspace(0,1);
-    [Y,Y_CI] = predict(fit_model,X','Alpha',0.05); 
-    E = Y_CI(:,2)'- Y';
-    Y = Y';
+    Y = 1./(1+exp(-betas(:,1)-betas(:,2).*X));
+    E = RH_SEM(Y);
+    Y = nanmean(Y);
+    subplot(2,3,3); hold on; box on
     patch([X X(end:-1:1)], [Y+E Y(end:-1:1)-E(end:-1:1)], color_LL, 'facealpha', 0.05, 'Edgecolor', color_LL);
     plot(X, Y, 'linestyle', '-', 'LineWidth', 2, 'color', color_LL);
-    xlabel('Costly option gaze proportion'); ylabel('Costly option choice rate'); ylim([0,1])
+    xlabel('Costly option gaze proportion'); ylabel('Costly option choice rate'); 
 
 %% Panel D -- LL chosen: Gaze rate vs. RT
-    subplot(2,3,6); cla; hold on; box on
-    gaze_rate_chosen = vertcat(gazeresults.gazerate_LL_choice);
-    fit_model = fitglm(gaze_rate,meanRT_LL);
+    betas = vertcat(gazeresults.beta_gaze_RT_LL);
     X = linspace(0,1);
-    [Y,Y_CI] = predict(fit_model,X','Alpha',0.05); 
-    E = Y_CI(:,2)'- Y';
-    Y = Y';
+    Y = betas(:,1) + betas(:,2) .* X;
+    E = RH_SEM(Y);
+    Y = nanmean(Y);
+    subplot(2,3,6); cla; hold on; box on
     patch([X X(end:-1:1)], [Y+E Y(end:-1:1)-E(end:-1:1)], color_LL, 'facealpha', 0.05, 'Edgecolor', color_LL);
     plot(X, Y, 'linestyle', '-', 'LineWidth', 2, 'color', color_LL);
     xlabel({'Costly option gaze proportion';'(costly option chosen)'}); ylabel('Costly option RT')
@@ -114,4 +100,9 @@
 function h = PrettyPatchPlot(X,Y,E,color) 
     patch([X X(end:-1:1)], [Y+E Y(end:-1:1)-E(end:-1:1)], color, 'facealpha', 0.25, 'Edgecolor', color);
     h = plot(X, Y, 'linestyle', '-', 'LineWidth', 2, 'color', color);
+end
+
+%% SEM
+function sem = RH_SEM(data)
+    sem = nanstd(data) ./ sqrt(sum(~isnan(data))); 
 end
