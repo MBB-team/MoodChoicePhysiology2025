@@ -1,5 +1,5 @@
 % Setup
-    data_directory = [cd filesep 'Data']; %Fill in the directory where the data is stored here
+    data_directory = 'C:\Users\Roeland\OneDrive\Experiment data\MoodChoicePhysiology2024'; %Fill in the directory where the data is stored here
     load('participants')
 % Exclusion criterion: choice rate
     choicerates = NaN(size(participants,1),1);
@@ -31,7 +31,7 @@
     end
     
 %% Panel (b) - psychometric curve of model without mood
-    Draw_Psychometric_Curve(winning_model_data,data_directory,false,i_exclude)
+    Draw_Psychometric_Curve(winning_model_data,data_directory,false,i_exclude) %for dimensions: [1062 580 274 284]
     
 %% Panel (c) - residuals regressed against mood
 % Settings
@@ -41,7 +41,7 @@
         0.5, 0.5, 0.5; ... %grey for neutral
         1.0000    0.9    0.1]; %yellow for happy
     color_map = NaN(101,3);
-    for i = 1:size(map,2)
+    for i = 1:size(color_map,2)
         color_map(:,i) = interp1([1;51;101], emotion_colors(:,i), 1:101)';
     end
 % Gather regression coefficients and binned residuals
@@ -74,7 +74,7 @@
         end
     end
 % Visualize
-    figure; hold on; box on
+    figure('Position',[112 613 377 308]); hold on; box on
     %Mean regression of residuals against mood ratings
         X = linspace(-2,2);
         Y = k_mood(:,1) + k_mood(:,2).*X;
@@ -98,6 +98,7 @@
 
 % Load model
     load([cd filesep 'Results' filesep 'choiceModelBased_withMood'])
+% Draw psychometric curve - for dimensions: [1062 580 274 284]
     Draw_Psychometric_Curve(winning_model_data,data_directory,true,i_exclude)
     
 %% Panel (e) - mood bias parameter distribution

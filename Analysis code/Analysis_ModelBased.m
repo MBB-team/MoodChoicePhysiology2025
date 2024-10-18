@@ -4,10 +4,10 @@
 
 % Prepare
     do_inversions = true;
-    do_mdlcomparison = false;
+    do_mdlcomparison = true;
     do_analysis_winningmodel = true;
     load('participants.mat')
-    data_directory = 'C:\Users\rheerema\OneDrive\Experiment data\MoodChoicePhysiology2024'; %Fill in the directory where the data is stored here
+    data_directory = 'C:\Users\Roeland\OneDrive\Experiment data\MoodChoicePhysiology2024'; %Fill in the directory where the data is stored here
 % Model settings
     %List the models to be inverted
         invert_models.DelayModel = {'exponential'};
@@ -17,16 +17,16 @@
         invert_models.PowerModel = {'variable'};
         invert_models.ChoiceTemp = {'per type'};
         invert_models.ChoiceBias = {'per type'};
-        invert_models.Mood = {'on bias'};
+        invert_models.Mood = {'on bias','on reward'};
     %List the models to be compared to each other
         compare_models.DelayModel = {'exponential'};
         compare_models.RiskModel = {'expected reward'};
         compare_models.EffortModel = {'additive'};
-        compare_models.RewardModel = {'fixed','variable'};
-        compare_models.PowerModel = {'fixed','variable'};
-        compare_models.ChoiceTemp = {'none','across types','per type'};
-        compare_models.ChoiceBias = {'none','across types','per type'};
-        compare_models.Mood = {'none'};
+        compare_models.RewardModel = {'fixed'};
+        compare_models.PowerModel = {'variable'};
+        compare_models.ChoiceTemp = {'per type'};
+        compare_models.ChoiceBias = {'per type'};
+        compare_models.Mood = {'on bias','on reward'};
     %Features of the winning model
         winning_model.DelayModel = {'exponential'};
         winning_model.RiskModel = {'expected reward'};
@@ -584,7 +584,9 @@ function [Z,V_uncostly,V_costly] = ObservationFunction_embedded(~,P,u,in)
         %Mood parameter
             switch in.modelspec{strcmp(in.modelcat,'Mood')}
                 case 'on bias'
-                    bias = bias + par.betaMood * M;                    
+                    bias = bias + par.betaMood * M;   
+                case 'on reward'
+                    k_Reward = k_Reward + par.betaMood * M;   
             end
         %Compute decision values per choice type
             V_uncostly(i) = k_Reward .* R1; %value of (uncostly) option 1
