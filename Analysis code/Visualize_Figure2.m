@@ -2,6 +2,7 @@
 
 % Load data: this variable is obtained by running 'Analysis_ModelFree.m'
     load([cd filesep 'Results' filesep 'InductionRatings'],'allRatings')
+    load('participants')
     
 % Settings
     which_ratings = {'RateHappy','RateSad','RateAngry','RateFear','Mood'};
@@ -17,7 +18,9 @@
         figure
         emo_ind1 = [1,2,5,3,4];
         emo_ind2 = [1,2,5];
+        dx = 0.15; %horizontal offset of the errorbar
         titles = {'Happiness induction','Sadness induction','Neutral induction','Anger induction','Fear induction'};
+        studies = {'exploratory','confirmatory'};
         for ii = 1:length(emo_ind1)
             emo = emo_ind1(ii);
             for R = 1:4 % H, S, A, F
@@ -27,7 +30,9 @@
                     ha = subplot(2,5,ii+(j-1)*length(emo_ind1)); hold on; %box on
                     M = data(1,j); SEM = data(2,j);
                     bar(R,M,'EdgeColor','none','LineWidth',1.5,'FaceColor',EmotionColors(R,:));
-                    errorbar(R,M,SEM,'vertical','k','CapSize',0,'LineWidth',1.25)
+                    errorbar(R+dx,M,SEM,'vertical','k','CapSize',0,'LineWidth',1.25)
+                    data2 = allRatings.(which_ratings{R})(strcmp(participants.experiment,studies{j}),emo);
+                    scatter(R*ones(size(data2))-dx,data2,5,(EmotionColors(R,:)).^2.5,'filled')
                     ylim([0,1]); yticks(0:0.2:1); ylabel('Rating score (raw)')
                     xticks(1:4); xticklabels({'H','S','A','F'}); xlabel('Rating'); xlim([0.33,4.66])
                     if emo~=1 
@@ -39,7 +44,8 @@
         for ii = 1:length(titles); subplot(2,5,ii); title(titles{ii}); end
             
     %mood (fig 2 c)
-        figure; hold on
+        subplot(2,20,34:40); hold on
+        dx = 0.05; %horizontal offset of the errorbar
         M = cell2mat(allRatings.perStudy.Mood(1,[1,2,5])');
         SEM = cell2mat(allRatings.perStudy.Mood(2,[1,2,5])');
         B = bar(M,'EdgeColor','none','FaceColor',EmotionColors(6,:));
@@ -50,10 +56,12 @@
                 x = cat - catwidth/2 + (2*group-1) * catwidth / (2*ngroups);
                 y = M(cat,group);
                 e = SEM(cat,group);
-                errorbar(x,y,e,'vertical','k','CapSize',0,'LineWidth',1.25)
+                errorbar(x+dx,y,e,'vertical','k','CapSize',0,'LineWidth',1.25)
+                data2 = allRatings.Mood(strcmp(participants.experiment,studies{group}),emo_ind2(cat));
+                scatter(x*ones(size(data2))-dx,data2,8,(EmotionColors(end,:)).^2.5,'filled')
             end
         end        
-        ylim([-1.25,1.25]); xlim([0.33 3.66])
+        ylim([-1.3,1.3]); xlim([0.33 3.66])
         yticks(-1.25:0.5:1.25); %ylabel('Mood score [z]'); title('All inductions')
         xticks(1:3); xticklabels({'Happiness','Sadness','Neutral'}); xlabel('Induction')
         ylabel('Mood score (Z)')
