@@ -12,13 +12,13 @@ Music files as used in the exploratory and confirmatory studies can be accessed 
 The folder `Analysis code` contains the following:
 * `participants.mat`: an overview with demographic information and experimental features for each participant.
 * `Analysis_ModelFree.m`: runs the model-free analysis of ratings and choice behaviour. Summary results are saved into the `Results` folder.
-* `Analysis_ModelBased.m`: runs the model-based analysis of choice behaviour using the VBA toolbox (see [https://mbb-team.github.io/VBA-toolbox/](url)). A list of models is created and inverted, and then the models are compared. Model data from the (winning) model is created and stored, along with results from the preceding steps, in the `Results` folder.
-* `Analysis_Physiology.m`: analyses physiological data recorded at the time of the emotion induction. Requires MATLAB's Signal Processing Toolbox to be installed, as well as Fieldtrip ([https://www.fieldtriptoolbox.org/](url)) and PsPM ([https://bachlab.github.io/PsPM/](url)).
+* `Analysis_ModelBased.m`: runs the model-based analysis of choice behaviour using the VBA toolbox (see [https://mbb-team.github.io/VBA-toolbox/](https://mbb-team.github.io/VBA-toolbox/)). A list of models is created and inverted, and then the models are compared. Model data from the (winning) model is created and stored, along with results from the preceding steps, in the `Results` folder.
+* `Analysis_Physiology.m`: analyses physiological data recorded at the time of the emotion induction. Requires MATLAB's Signal Processing Toolbox to be installed, as well as Fieldtrip ([https://www.fieldtriptoolbox.org/](https://www.fieldtriptoolbox.org/)) and PsPM ([https://bachlab.github.io/PsPM/](https://bachlab.github.io/PsPM/)).
 * `Analysis_Eyetracking.m`: analyses gaze patterns recorded during choices.
 * `Visualize_FigureX.m`: recreates the figures from the publication, using the summary data stored in the `Results` folder.
 
 ### Raw data
-Raw data can be accessed on the Open Science Framework: [https://osf.io/wtqzh/?view_only=7e11ce43db764981bb1a32581ccddc9a](url).\
+Raw data can be accessed on the Open Science Framework: [https://osf.io/wtqzh/?view_only=7e11ce43db764981bb1a32581ccddc9a](https://osf.io/wtqzh/?view_only=7e11ce43db764981bb1a32581ccddc9a).\
 Data is stored in a unique folder (saved as a .zip file) per participant:
 * Each folder contains a main file `AllData.mat`, with the following variables:
   * _trialinfo_: information about each individual choice trial in the main experiment, and the participant's choice behaviour
@@ -27,7 +27,7 @@ Data is stored in a unique folder (saved as a .zip file) per participant:
   * _pupil_: per-induction pupil diameter response data
   * _EDA_: per-induction electrodermal activity 
   * _EMG_: per-induction electromyography 
-* In studies where physiology was recorded with a BIOPAC setup (see [https://www.biopac.com/](url)), the file `BiopacDataset.mat` contains the raw data as outputted by the _AcqKnowledge_ software.
-* In studies where eyetracking was performed with an EyeTribe camera (see [https://github.com/EyeTribe/documentation](url)), the file `AllGazeData.mat` contains the per-choice gaze position data. The raw data outputted by the Eyetribe (also containing raw pupil diameter data) can be found in the folder `Eyetracking`. Each file contains data from one trial (i.e. induction followed by a series of choice trials).
+* In studies where physiology was recorded with a BIOPAC setup (see [https://www.biopac.com/](https://www.biopac.com/)), the file `BiopacDataset.mat` contains the raw data as outputted by the _AcqKnowledge_ software.
+* In studies where eyetracking was performed with an EyeTribe camera (see [https://github.com/EyeTribe/documentation](https://github.com/EyeTribe/documentation)), the file `AllGazeData.mat` contains the per-choice gaze position data. The raw data outputted by the Eyetribe (also containing raw pupil diameter data) can be found in the folder `Eyetracking`. Each file contains data from one trial (i.e. induction followed by a series of choice trials).
 
 The meaning of every variable in each of these files is explained in the file `Dataset variables explainer.xlsx`.
