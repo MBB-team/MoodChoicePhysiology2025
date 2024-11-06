@@ -18,7 +18,7 @@ The folder `Analysis code` contains the following:
 * `Visualize_FigureX.m`: recreates the figures from the publication, using the summary data stored in the `Results` folder.
 
 ### Raw data
-Raw data can be accessed here: [https://1drv.ms/f/s!AlQbJDY7oqVPjd1zdoWe0b9q1N8NLg?e=SQdpeN](url).\
+Raw data can be accessed here: [https://osf.io/wtqzh/?view_only=7e11ce43db764981bb1a32581ccddc9a](url).\
 Data is stored in a unique folder per participant:
 * Each folder contains a main file `AllData.mat`, with the following variables:
   * _trialinfo_: information about each individual choice trial in the main experiment, and the participant's choice behaviour
