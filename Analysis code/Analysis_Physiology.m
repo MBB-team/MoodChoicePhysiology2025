@@ -1,7 +1,7 @@
 %% Analysis of physiology
 
 % General settings
-    data_directory = 'C:\Users\rheerema\OneDrive\Experiment data\MoodChoicePhysiology2024'; %Fill in the directory where the data is stored here
+    data_directory = ''; %fill in the data directory here
     load('participants.mat') %Load the participants table
     load('choiceModelBased_noMood.mat') %Load the winning choice model that does not include mood
     phys = {'EDA','pupil','zygomaticus','corrugator'}; %physiological signals

@@ -3,7 +3,7 @@
     screenX = 1920/8; %screen width (for heatmap)
     screenY = 1080/8; %screen height (for heatmap)
     smoothing_angle = 3;
-    data_directory = 'C:\Users\rheerema\OneDrive\Experiment data\MoodChoicePhysiology2024';
+    data_directory = ''; %fill in the data directory here
     samplingrate = 60; %Hz
     
 % Prepare

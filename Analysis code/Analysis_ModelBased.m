@@ -7,7 +7,7 @@
     do_mdlcomparison = true;
     do_analysis_winningmodel = true;
     load('participants.mat')
-    data_directory = 'C:\Users\Roeland\OneDrive\Experiment data\MoodChoicePhysiology2024'; %Fill in the directory where the data is stored here
+    data_directory = ''; %fill in the data directory here
 % Model settings
     %List the models to be inverted
         invert_models.DelayModel = {'exponential'};

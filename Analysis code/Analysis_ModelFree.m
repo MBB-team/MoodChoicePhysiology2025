@@ -1,7 +1,7 @@
 %% Analysis of behaviour: emotion ratings and decision-making
 
 % General settings
-    data_directory = 'C:\Users\rheerema\OneDrive\Experiment data\MoodChoicePhysiology2024'; %Fill in the directory where the data is stored here
+    data_directory = ''; %fill in the data directory here
     load('participants.mat') %Load the participants table
     allRatings = struct; %rating results
     choice_mdlfree = struct; %choice behaviour results
