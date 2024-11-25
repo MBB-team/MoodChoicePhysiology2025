@@ -176,6 +176,7 @@
             emocolors = EmotionColors([1,2,5],:);
             for emo = 1:3
                 data = cell2mat(zygomaticus(:,emo));
+                data = ft_preproc_smooth(data,20);
                 Y = nanmean(data);
                 X = linspace(0,10,length(Y));
                 SEM = nanstd(data)./sqrt(sum(~isnan(data)));
@@ -198,6 +199,7 @@
             emocolors = EmotionColors(3:5,:);
             for emo = 1:length(zygomaticus)
                 data = cell2mat(zygomaticus(:,emo));
+                data = ft_preproc_smooth(data,20);
                 Y = nanmean(data);
                 X = linspace(0,10,length(Y));
                 SEM = nanstd(data)./sqrt(sum(~isnan(data)));
@@ -223,6 +225,7 @@
             emocolors = EmotionColors([1,2,5],:);
             for emo = 1:3
                 data = cell2mat(corrugator(:,emo));
+                data = ft_preproc_smooth(data,20);
                 Y = nanmean(data);
                 X = linspace(0,10,length(Y));
                 SEM = nanstd(data)./sqrt(sum(~isnan(data)));
@@ -235,7 +238,7 @@
             plot(rftH,0.3*ones(size(rftH)),'color',EmotionColors(end,:),'LineWidth',4)
         %Layout
             xlim([0,10.05]); xticks(0:10); xlabel('Time since induction onset [s]')
-            ylim([-0.7 0.4]); ylabel('corrugator EMG (Z)');
+            ylim([-0.7 0.4]); ylabel('Corrugator EMG (Z)');
     %Anger/Fear/Neutral
         subplot(4,2,8); hold on; box on
         %Get data
@@ -245,6 +248,7 @@
             emocolors = EmotionColors(3:5,:);
             for emo = 1:length(corrugator)
                 data = cell2mat(corrugator(:,emo));
+                data = ft_preproc_smooth(data,20);
                 Y = nanmean(data);
                 X = linspace(0,10,length(Y));
                 SEM = nanstd(data)./sqrt(sum(~isnan(data)));
@@ -252,10 +256,7 @@
                 PrettyPatchPlot(X,Y,SEM,color)
             end
             xlim([0,10.05]); xticks(0:10); xlabel('Time since induction onset [s]')
-            ylim([-0.7 0.4]); ylabel('corrugator EMG (Z)');
-% Save
-    return
-    saveas(gcf,'TimeResolvedPhysiology.png')
+            ylim([-0.7 0.4]); ylabel('Corrugator EMG (Z)');
     
 %% Patch plot
 function PrettyPatchPlot(X,Y,E,color) 

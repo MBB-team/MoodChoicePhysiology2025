@@ -1,7 +1,7 @@
 %% Analysis of behaviour: emotion ratings and decision-making
 
 % General settings
-    data_directory = ''; %fill in the data directory here
+    data_directory = 'C:\Users\Roela\OneDrive\Experiment data\MoodChoicePhysiology2024'; %fill in the data directory here
     load('participants.mat') %Load the participants table
     allRatings = struct; %rating results
     choice_mdlfree = struct; %choice behaviour results
@@ -187,7 +187,7 @@
                     fit_model = fitglm([AllData.trialinfo.mood,1-AllData.trialinfo.choiceLL],RT,'interactions');
                     choice_mdlfree.beta_RT(ppt,:) = fit_model.Coefficients.Estimate(2:end)';
     end %for ppt
-    
+    return
 % Store
     save([cd filesep 'Results' filesep 'InductionRatings'],'allRatings')
     save([cd filesep 'Results' filesep 'choiceModelFree'],'choice_mdlfree')

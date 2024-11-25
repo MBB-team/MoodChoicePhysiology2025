@@ -1,9 +1,9 @@
 
 % Data
-    data = vertcat(gazeresults.beta_gaze_RT_LL); data = data(:,2);
+    data = choice_mdlfree.beta_mood(:,[2,1,3]);
     is_percentage = false;
     effect_name = 'b';
-    split_studies = false;
+    split_studies = true;
     visualize = false;
 % Run test
     if split_studies
