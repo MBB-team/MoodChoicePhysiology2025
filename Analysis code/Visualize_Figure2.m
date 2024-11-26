@@ -16,7 +16,7 @@
                     
 % Produce figure 2
     %ratings (fig 2 a, b)
-        figure
+        figure('Position',[253.5000 336 928 462])
         emo_ind1 = [1,2,5,3,4];
         emo_ind2 = [1,2,5];
         dx = 0.15; %#ok<*NASGU> %horizontal offset of the errorbarv
@@ -31,8 +31,8 @@
                 ha = subplot(2,5,ii+(j-1)*length(emo_ind1)); hold on; %box on
                 data2 = cellfun(@(x) x(strcmp(participants.experiment,studies{j}),:),data,'UniformOutput',false);
                 RH_Boxchart(data2,EmotionColors(1:4,:));
-                ylim([0,1]); yticks(0:0.2:1); ylabel('Rating score (raw)')
-                xticklabels({'H','S','A','F'}); xlabel('Rating'); xlim([0.5,1.5])
+                ylim([0,1]); yticks(0:0.2:1); xticklabels({'H','S','A','F'}); xlabel('Rating'); xlim([0.5,1.5])
+                if j == 1; ylabel({'Rating score (raw)';'Exploratory'}); else; ylabel({'Rating score (raw)';'Confirmatory'}); end
                 if emo~=1 
                     ha.YAxis.Visible = 'off'; % remove y-axis
                 end
@@ -42,6 +42,7 @@
         
     %mood (fig 2 c)
         subplot(2,20,34:40); hold on
+        line([0,4],[0,0],'color',0.8*ones(1,3),'LineWidth',0.5)
         data = {allRatings.Mood(strcmp(participants.experiment,studies{1}),emo_ind2),...
             allRatings.Mood(strcmp(participants.experiment,studies{2}),emo_ind2)};
         RH_Boxchart(data,EmotionColors(6,:))

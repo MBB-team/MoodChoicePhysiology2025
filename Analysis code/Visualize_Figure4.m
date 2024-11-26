@@ -15,8 +15,10 @@ EmotionColors = [...
 %% Panel (a) Choice rates for exploratory vs. confirmatory studies
     choicerates = choice_mdlfree.choiceRate(:,1:4)-choice_mdlfree.choiceRate(:,5); %difference w.r.t. neutral
     figure(1)
+    set(gcf,'Position',[520 300.5000 581 497.5000])
     for i = 1:2 %exploratory and confirmatory
         ha = subplot(2,3,i); hold on
+        line([0,4],[0,0],'color',0.8*ones(1,3),'LineWidth',0.5)
         if i == 1; ii = strcmp(participants.experiment,'exploratory');
         else; ii = strcmp(participants.experiment,'confirmatory'); 
             ha.YAxis.Visible = 'off'; % remove y-axis
@@ -24,7 +26,7 @@ EmotionColors = [...
         data = {choicerates(ii,1),choicerates(ii,2),choicerates(ii,3),choicerates(ii,4)};
         RH_Boxchart(data,EmotionColors(1:4,:))
         ha = gca; ha.FontSize=10;
-        ylim([-0.3,0.3]); yticks(-0.35:0.15:0.35); ylabel('\Delta costly choice rate','FontSize',11); yticklabels({'-30%','-15%','0%','15%','30%'});
+        ylim([-0.35,0.35]); yticks(-0.3:0.15:0.3); ylabel('\Delta costly choice rate','FontSize',11); yticklabels({'-30%','-15%','0%','15%','30%'});
         xticklabels({'H','S','A','F'}); xlabel('Induction'); xlim([0.5,1.5])
     end
         
@@ -32,6 +34,7 @@ EmotionColors = [...
     figure(1); 
     for i = 1:2 %exploratory and confirmatory
         ha = subplot(2,3,3+i); hold on
+        line([0,4],[0,0],'color',0.8*ones(1,3),'LineWidth',0.5)
         if i == 1; ii = strcmp(participants.experiment,'exploratory');
         else; ii = strcmp(participants.experiment,'confirmatory'); 
             ha.YAxis.Visible = 'off'; % remove y-axis
@@ -44,6 +47,7 @@ EmotionColors = [...
     end
     
 %% Panel (d) Response Time
+    % set(gcf,'Position',[520 182.5000 791 615.5000])
     data = {NaN(size(participants,1),2),...
         [choice_mdlfree.RT_perEmo_SS(:,1)-choice_mdlfree.RT_perEmo_SS(:,3),...
         choice_mdlfree.RT_perEmo_LL(:,1)-choice_mdlfree.RT_perEmo_LL(:,3)],...
@@ -51,10 +55,11 @@ EmotionColors = [...
         choice_mdlfree.RT_perEmo_LL(:,2)-choice_mdlfree.RT_perEmo_LL(:,3)],...
         NaN(size(participants,1),2)}; %for visual arrangement
     figure(1); subplot(2,3,6); hold on
+        line([0,3],[0,0],'color',0.8*ones(1,3),'LineWidth',0.5)
         RH_Boxchart(data,EmotionColors([1,1,2,2],:));
         xticks([1,2]); xticklabels({'uncostly','costly'}); 
         ha=gca;ha.FontSize=10; 
-        ylim([-0.6,0.8]); ylabel('\Delta RT (Z)','FontSize',11)
+        ylim([-0.6,0.8]); yticks(-0.6:0.2:0.8); xlim([0.6,2.4]); ylabel('\Delta RT (Z)','FontSize',11)
         box on
         
 %% Panel (b) Choice rates across studies
