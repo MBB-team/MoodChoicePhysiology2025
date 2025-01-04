@@ -34,16 +34,16 @@ EmotionColors = [...
     figure(1); 
     for i = 1:2 %exploratory and confirmatory
         ha = subplot(2,3,3+i); hold on
-        line([0,4],[0,0],'color',0.8*ones(1,3),'LineWidth',0.5)
+        line([0,1.5],[0,0],'color',0.8*ones(1,3),'LineWidth',0.5)
         if i == 1; ii = strcmp(participants.experiment,'exploratory');
         else; ii = strcmp(participants.experiment,'confirmatory'); 
             ha.YAxis.Visible = 'off'; % remove y-axis
         end
-        data = {choice_mdlfree.beta_mood(ii,2),choice_mdlfree.beta_mood(ii,1),choice_mdlfree.beta_mood(ii,3)};
+        data = {choice_mdlfree.beta_mood(ii,2),choice_mdlfree.beta_mood(ii,1),choice_mdlfree.beta_mood(ii,3),choice_mdlfree.beta_mood(ii,4)};
         RH_Boxchart(data,EmotionColors(6,:))
         ha = gca; ha.FontSize=10;
         ylim([-1,1]); yticks(-1:0.5:1); ylabel('Weight on mood','FontSize',11);
-        xticklabels({'risk','delay','effort'}); xlim([0.5,1.5])
+        xticklabels({'risk','delay','effort','all'}); xlim([0.5,1.5])
     end
     
 %% Panel (d) Response Time
