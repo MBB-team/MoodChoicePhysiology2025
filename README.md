@@ -1,5 +1,5 @@
-# MoodChoicePhysiology2024
-This repository contains supporting material of the paper "Heerema &amp; Pessiglione (2024) How mood-related physiological states bias economic decisions".
+# MoodChoicePhysiology2025
+This repository contains supporting material of the paper "Heerema &amp; Pessiglione (2025) How mood-related physiological states bias economic decisions".
 
 ### Literature overview table
 The file `Literature overview table.xlsx` lists all the studies we could find that employed some form of mood/emotion induction procedure, followed by economic cost-benefit trade-offs. Design properties and main results per studies are listed. Information from this file was used in the introduction and discussion of the paper.
