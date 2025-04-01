@@ -74,7 +74,6 @@ EmotionColors = [...
     color_S = EmotionColors(2,:);    
 %Visualize
     hf2 = figure(2);
-    hf2.Position = [2316 225 729 520];
     subplot(2,3,1); hold on
         h1 = raincloud_plot(data(:,1), 'color', color_H, 'line_width', 1.5,'density_type', 'ks');
         xlim([-0.35,0.35]); xticks(-0.4:0.1:0.4); 

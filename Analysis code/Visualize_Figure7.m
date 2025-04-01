@@ -5,7 +5,7 @@
     load('participants.mat')
     load('choiceModelFree.mat')
     participants = participants(participants.eyetracking==1,:);
-    data_directory = 'C:\Users\rheerema\OneDrive\Experiment data\MoodChoicePhysiology2024'; %Fill in the directory where the data is stored here
+    data_directory = ''; %Fill in the directory where the data is stored here
 
 % Setup
     hf = figure;

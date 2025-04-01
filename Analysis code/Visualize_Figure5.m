@@ -1,5 +1,5 @@
 % Setup
-    data_directory = 'C:\Users\Roeland\OneDrive\Experiment data\MoodChoicePhysiology2024'; %Fill in the directory where the data is stored here
+    data_directory = ''; %Fill in the directory where the data is stored here
     load('participants')
 % Exclusion criterion: choice rate
     choicerates = NaN(size(participants,1),1);
@@ -113,7 +113,7 @@
 % Settings
     moodcolor = [0.2000    0.6000    0.2000];
     i_exclude = 52; %no variability in behaviour
-    betaMood = [Inversionresults.muPhi.betaMood]';
+    betaMood = [Inversionresults(1).muPhi.betaMood]';
     betaMood(i_exclude) = NaN;
     
 % Plot
