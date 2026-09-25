@@ -26,8 +26,11 @@ Data is stored in a unique folder (saved as a .zip file) per participant:
   * _affect_: information and behavioural results from each individual emotion induction in the main experiment
   * _pupil_: per-induction pupil diameter response data
   * _EDA_: per-induction electrodermal activity 
-  * _EMG_: per-induction electromyography 
+  * _EMG_: per-induction electromyography (**note: see Sept 2026 change log**)
 * In studies where physiology was recorded with a BIOPAC setup (see [https://www.biopac.com/](https://www.biopac.com/)), the file `BiopacDataset.mat` contains the raw data as outputted by the _AcqKnowledge_ software.
 * In studies where eyetracking was performed with an EyeTribe camera (see [https://github.com/EyeTribe/documentation](https://github.com/EyeTribe/documentation)), the file `AllGazeData.mat` contains the per-choice gaze position data. The raw data outputted by the Eyetribe (also containing raw pupil diameter data) can be found in the folder `Eyetracking`. Each file contains data from one trial (i.e. induction followed by a series of choice trials).
 
 The meaning of every variable in each of these files is explained in the file `Dataset variables explainer.xlsx`.
+
+### Change log
+* Sept 2026: corrected EMG.AFN (anger/fear/neutral EMG) for exploratory participants (IDs 1–34); previous version contained happiness/sadness/neutral EMG in these rows. No other variables changed.
